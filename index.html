@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monster Survivor</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div id="ui">
+        <div>Level: <span id="level-val">1</span></div>
+        <div>XP: <span id="xp-val">0</span> / <span id="next-xp-val">100</span></div>
+        <div>HP: <span id="hp-val">100</span></div>
+        <div>Time: <span id="time-val">0:00</span></div>
+        <div>Weapon: <span id="weapon-info">Whip</span></div>
+        <div id="stat-bonus-info"></div>
+    </div>
+
+    <div id="level-up-modal">
+        <h2>レベルアップ！アップグレードを選択：</h2>
+    </div>
+
+    <div id="game-over">
+        <h1>ゲームオーバー</h1>
+        <p>生存時間：<span id="final-time"></span></p>
+        <button class="upgrade-btn" onclick="location.reload()">再挑戦</button>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <script src="js/weapons.js"></script>
+    <script src="js/enemy_types.js"></script>
+    <script src="js/accessories.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
