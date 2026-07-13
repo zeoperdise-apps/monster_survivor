@@ -1089,17 +1089,6 @@ function levelUp() {
         });
     });
 
-    // ランダムなレベルアップ選択肢を追加する（10%の確率）。表示される
-    // 選択肢はクリック時に適用されるものと完全に一致する
-    // （RANDOM_UPGRADE_TYPES / selectRandomUpgrade参照）。
-    if (Math.random() < 0.1) {
-        const randomType = RANDOM_UPGRADE_TYPES[Math.floor(Math.random() * RANDOM_UPGRADE_TYPES.length)];
-        upgradeOptions.push({
-            type: 'random',
-            data: randomType
-        });
-    }
-
     // レベルアップモーダルにアクセサリーの選択肢を追加する（プレイヤーが
     // まだ持っていないアクセサリーのみ。全種類を所持済みの場合はここで
     // 何も提示されず、その枠は下の武器での穴埋め処理に回る）
@@ -1120,9 +1109,9 @@ function levelUp() {
         });
     });
 
-    // 選択肢を最大3つに制限する: 武器は常に2つ含まれ、ランダム／アクセサリー
-    // の枠が加わると合計が4つになることがある。特定のカテゴリーだけが
-    // 常に除外されないよう、超過分はランダムに間引く。
+    // 選択肢を最大3つに制限する: 武器は常に2つ含まれ、アクセサリーの枠が
+    // 加わると合計が4つになることがある。特定のカテゴリーだけが常に
+    // 除外されないよう、超過分はランダムに間引く。
     while (upgradeOptions.length > 3) {
         upgradeOptions.splice(Math.floor(Math.random() * upgradeOptions.length), 1);
     }
@@ -1158,10 +1147,8 @@ function levelUp() {
         const chosen = upgradeOptions[Math.floor(Math.random() * upgradeOptions.length)];
         if (chosen.type === 'weapon') {
             addWeaponToPlayer(player, chosen.data.name);
-        } else if (chosen.type === 'accessory') {
-            addAccessoryToPlayer(player, chosen.data.name);
         } else {
-            chosen.data.apply();
+            addAccessoryToPlayer(player, chosen.data.name);
         }
         showToast(`レベルアップ（自動選択）: ${chosen.data.name}`);
         return;
@@ -1179,10 +1166,8 @@ function levelUp() {
         ${upgradeOptions.map((option) => {
             if (option.type === 'weapon') {
                 return `<button class="upgrade-btn" onclick="selectWeapon('${option.data.name}')">${upgradeIcon(option.data)}${option.data.name} - ${option.data.description}</button>`;
-            } else if (option.type === 'accessory') {
+            } else {
                 return `<button class="upgrade-btn" onclick="selectAccessory('${option.data.name}')">${upgradeIcon(option.data)}${option.data.name} - ${option.data.description}</button>`;
-            } else { // ランダムアップグレード
-                return `<button class="upgrade-btn" onclick="selectRandomUpgrade('${option.data.id}')">${option.data.name} - ${option.data.description}</button>`;
             }
         }).join('')}
         <br><br>
@@ -1197,56 +1182,6 @@ function levelUp() {
 
 // レベルアップの選択をスキップする関数
 function skipLevelUp() {
-    isPaused = false;
-    document.getElementById('level-up-modal').style.display = 'none';
-    requestAnimationFrame(gameLoop);
-}
-
-// レアな（10%の確率の）ランダムレベルアップボーナス。各エントリの`apply()`は
-// そのidに紐づく唯一の効果であり、プレイヤーが見てクリックした選択肢が
-// 常にそのまま適用される（クリック時に別の抽選が走ることはない）。
-const RANDOM_UPGRADE_TYPES = [
-    {
-        id: 'damage',
-        name: '攻撃力アップ',
-        description: 'すべての武器の攻撃力が10%上昇',
-        apply: () => {
-            player.bonusDamage += 10;
-        }
-    },
-    {
-        id: 'fireRate',
-        name: '攻撃速度アップ',
-        description: 'すべての武器の攻撃速度が15%上昇',
-        apply: () => {
-            player.bonusFireRate += 15;
-        }
-    },
-    {
-        id: 'speed',
-        name: '移動速度アップ',
-        description: '移動速度が10%上昇',
-        apply: () => {
-            player.bonusSpeed += 10;
-            applyPlayerStats();
-        }
-    },
-    {
-        id: 'heal',
-        name: '回復＆最大HPアップ',
-        description: '最大HPが20%上昇し、全回復する',
-        apply: () => {
-            player.bonusMaxHp += 20;
-            applyPlayerStats();
-            player.hp = player.maxHp;
-        }
-    }
-];
-
-function selectRandomUpgrade(id) {
-    const type = RANDOM_UPGRADE_TYPES.find(t => t.id === id);
-    if (type) type.apply();
-
     isPaused = false;
     document.getElementById('level-up-modal').style.display = 'none';
     requestAnimationFrame(gameLoop);
