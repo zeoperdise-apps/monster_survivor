@@ -81,15 +81,27 @@ let autoLevelUp = false;
 let debugMode = false;
 let invincible = false;
 
-// Background tile setup
+// Background tile setup. The field is unlimited: tiles aren't pre-generated
+// into an array, they're derived on the fly each frame from the camera's
+// current position, so the world extends forever in every direction.
 const tileSize = 100;
-const backgroundTiles = [];
 
-// Create background tiles (simple grass pattern)
-for (let y = -canvas.height; y < canvas.height * 2; y += tileSize) {
-    for (let x = -canvas.width; x < canvas.width * 2; x += tileSize) {
-        backgroundTiles.push({x, y});
-    }
+// Biome definitions. Which biome a tile belongs to is a deterministic
+// function of its world position (see getBiome), so no biome data needs to
+// be stored - it can be recomputed identically anywhere, any time.
+const BIOME_COLORS = {
+    grassland: { fill: '#4a8c4a', detail: '#3d7a3d' },
+    forest: { fill: '#2f6b3a', detail: '#204a28' },
+    wasteland: { fill: '#a68a52', detail: '#8a703c' },
+    cursed: { fill: '#5c3a6b', detail: '#432850' }
+};
+
+function getBiome(worldX, worldY) {
+    const n = Math.sin(worldX * 0.0015) + Math.cos(worldY * 0.0015);
+    if (n > 0.6) return 'forest';
+    if (n > -0.2) return 'grassland';
+    if (n > -0.8) return 'wasteland';
+    return 'cursed';
 }
 
 // Input
@@ -1191,15 +1203,25 @@ function updateUI() {
 
 
 function drawBackground() {
-    // Draw grass tiles (offset by camera position)
-    ctx.fillStyle = '#4a8c4a'; // Green color for grass
-    backgroundTiles.forEach(tile => {
-        const screenX = tile.x - cameraX;
-        const screenY = tile.y - cameraY;
-        if (screenX < canvas.width && screenX > -tileSize && screenY < canvas.height && screenY > -tileSize) {
+    // Generate only the tiles currently visible around the camera, so the
+    // field never runs out no matter how far the player wanders.
+    const startTileX = Math.floor(cameraX / tileSize) - 1;
+    const endTileX = Math.floor((cameraX + canvas.width) / tileSize) + 1;
+    const startTileY = Math.floor(cameraY / tileSize) - 1;
+    const endTileY = Math.floor((cameraY + canvas.height) / tileSize) + 1;
+
+    for (let ty = startTileY; ty <= endTileY; ty++) {
+        for (let tx = startTileX; tx <= endTileX; tx++) {
+            const worldX = tx * tileSize;
+            const worldY = ty * tileSize;
+            const screenX = worldX - cameraX;
+            const screenY = worldY - cameraY;
+            const colors = BIOME_COLORS[getBiome(worldX, worldY)];
+
+            ctx.fillStyle = colors.fill;
             ctx.fillRect(screenX, screenY, tileSize, tileSize);
-            // Draw grass details
-            ctx.strokeStyle = '#3d7a3d';
+
+            ctx.strokeStyle = colors.detail;
             ctx.lineWidth = 1;
             ctx.beginPath();
             ctx.moveTo(screenX + 10, screenY + tileSize - 5);
@@ -1207,7 +1229,7 @@ function drawBackground() {
             ctx.lineTo(screenX + 30, screenY + tileSize - 8);
             ctx.stroke();
         }
-    });
+    }
 }
 
 function gameLoop() {
