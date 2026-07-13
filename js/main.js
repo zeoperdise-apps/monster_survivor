@@ -86,6 +86,13 @@ let autoLevelUp = false;
 let debugMode = false;
 let invincible = false;
 
+// ゲームスピード倍率。0.5倍刻みで最大4倍まで上げられる（等倍が基準の1倍）。
+const GAME_SPEED_MIN = 1;
+const GAME_SPEED_MAX = 4;
+const GAME_SPEED_STEP = 0.5;
+let gameSpeed = 1;
+let speedAccumulator = 0; // 端数のスピード倍率を複数フレームにわたって積み立てる
+
 // 背景タイルの設定。フィールドは無制限: タイルは配列に事前生成せず、
 // 毎フレームカメラの現在位置から動的に算出するため、ワールドは
 // あらゆる方向に無限に広がる。
@@ -126,6 +133,17 @@ window.addEventListener('keydown', e => {
     if (e.code === 'KeyL') {
         autoLevelUp = !autoLevelUp;
         showToast(autoLevelUp ? '自動レベルアップ: ON' : '自動レベルアップ: OFF');
+    }
+});
+
+// ゲームスピードの変更: +/-キーで0.5倍刻みに増減させる（1〜4倍の範囲）
+window.addEventListener('keydown', e => {
+    if (e.code === 'Equal') {
+        gameSpeed = Math.min(GAME_SPEED_MAX, Math.round((gameSpeed + GAME_SPEED_STEP) * 10) / 10);
+        showToast(`ゲームスピード: ${gameSpeed}倍`);
+    } else if (e.code === 'Minus') {
+        gameSpeed = Math.max(GAME_SPEED_MIN, Math.round((gameSpeed - GAME_SPEED_STEP) * 10) / 10);
+        showToast(`ゲームスピード: ${gameSpeed}倍`);
     }
 });
 
@@ -1462,6 +1480,7 @@ function updateUI() {
         const parts = [];
         if (autoBattle) parts.push('自動戦闘: ON (B)');
         if (autoLevelUp) parts.push('自動レベルアップ: ON (L)');
+        if (gameSpeed !== 1) parts.push(`ゲームスピード: ${gameSpeed}倍 (+/-)`);
         autoBattleInfoElement.innerText = parts.join(' / ');
     }
 
@@ -1505,6 +1524,19 @@ function drawBackground() {
 function gameLoop() {
     if (isPaused || isGameOver) return;
 
+    // ゲームスピードが1倍より速ければ1回の描画で複数回、遅ければ数回に
+    // 1回だけゲームを進行させる（0.5倍刻みの端数はここで積み立てて処理する）。
+    speedAccumulator += gameSpeed;
+    while (speedAccumulator >= 1) {
+        stepGame();
+        speedAccumulator -= 1;
+        if (isPaused || isGameOver) return;
+    }
+
+    requestAnimationFrame(gameLoop);
+}
+
+function stepGame() {
     // 10フレームごとにプレイヤー画像を切り替えてアニメーションさせる
     if (frameCount % 10 === 0) {
         currentPlayerImg = currentPlayerImg === playerImg1 ? playerImg2 : playerImg1;
@@ -1605,7 +1637,6 @@ function gameLoop() {
 
     updateUI();
     frameCount++;
-    requestAnimationFrame(gameLoop);
 }
 
 gameLoop();
