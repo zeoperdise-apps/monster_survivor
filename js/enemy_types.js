@@ -1,4 +1,7 @@
-// Enemy type definitions with different behaviors
+// Enemy type definitions with different behaviors. Each enemy only appears
+// within its own [minLevel, maxLevel] player-level range (maxLevel omitted
+// means "no upper bound"). Weaker early enemies phase out at higher levels;
+// late-game threats stay in the pool forever once unlocked.
 const enemyTypes = [
     {
         color: '#f44',
@@ -7,7 +10,9 @@ const enemyTypes = [
         size: 30,
         damage: 5,
         img: 'img/Goblin.png',
-        name: "ゴブリン"
+        name: "ゴブリン",
+        minLevel: 1,
+        maxLevel: 10
     },
     {
         color: '#4f4',
@@ -16,7 +21,9 @@ const enemyTypes = [
         size: 45,
         damage: 8,
         img: 'img/Ogre.png',
-        name: "オーガ"
+        name: "オーガ",
+        minLevel: 5,
+        maxLevel: 14
     },
     {
         color: '#44f',
@@ -25,7 +32,9 @@ const enemyTypes = [
         size: 27,
         damage: 6,
         img: 'img/Skeleton.png',
-        name: "スケルトン"
+        name: "スケルトン",
+        minLevel: 3,
+        maxLevel: 11
     },
     {
         color: '#ff4',
@@ -34,7 +43,9 @@ const enemyTypes = [
         size: 54,
         damage: 10,
         img: 'img/Troll.png',
-        name: "トロール"
+        name: "トロール",
+        minLevel: 6,
+        maxLevel: 15
     },
     {
         color: '#f4f',
@@ -43,7 +54,9 @@ const enemyTypes = [
         size: 21,
         damage: 4,
         img: 'img/Ghost.png',
-        name: "ゴースト"
+        name: "ゴースト",
+        minLevel: 7,
+        maxLevel: 16
     },
     {
         color: '#4ff',
@@ -52,7 +65,9 @@ const enemyTypes = [
         size: 27,
         damage: 7,
         img: 'img/Wizard.png',
-        name: "ウィザード"
+        name: "ウィザード",
+        minLevel: 8,
+        maxLevel: 18
     },
     {
         color: '#f84',
@@ -61,7 +76,8 @@ const enemyTypes = [
         size: 36,
         damage: 9,
         img: 'img/Demon.png',
-        name: "デーモン"
+        name: "デーモン",
+        minLevel: 10
     },
     {
         color: '#8f4',
@@ -70,7 +86,8 @@ const enemyTypes = [
         size: 66,
         damage: 14,
         img: 'img/Giant.png',
-        name: "ジャイアント"
+        name: "ジャイアント",
+        minLevel: 12
     },
     {
         color: '#48f',
@@ -79,7 +96,8 @@ const enemyTypes = [
         size: 21,
         damage: 6,
         img: 'img/Shade.png',
-        name: "シェード"
+        name: "シェード",
+        minLevel: 15
     },
     {
         color: '#f48',
@@ -88,33 +106,16 @@ const enemyTypes = [
         size: 81,
         damage: 20,
         img: 'img/Dragon.png',
-        name: "ドラゴン"
+        name: "ドラゴン",
+        minLevel: 18
     }
 ];
-
-// Each enemy appears only within its [min, max] player-level range. Weaker
-// early enemies phase out at higher levels; late-game threats (no max) stay
-// in the pool forever once unlocked.
-const ENEMY_LEVEL_RANGES = {
-    "ゴブリン": [1, 10],
-    "スケルトン": [3, 11],
-    "オーガ": [5, 14],
-    "トロール": [6, 15],
-    "ゴースト": [7, 16],
-    "ウィザード": [8, 18],
-    "デーモン": [10, Infinity],
-    "ジャイアント": [12, Infinity],
-    "シェード": [15, Infinity],
-    "ドラゴン": [18, Infinity]
-};
 
 // Function to get available enemy types based on player level
 function getAvailableEnemyTypes(playerLevel) {
     const available = enemyTypes.filter(type => {
-        const range = ENEMY_LEVEL_RANGES[type.name];
-        if (!range) return true;
-        const [min, max] = range;
-        return playerLevel >= min && playerLevel <= max;
+        const max = type.maxLevel === undefined ? Infinity : type.maxLevel;
+        return playerLevel >= type.minLevel && playerLevel <= max;
     });
 
     // Safety net: never return an empty pool (e.g. if ranges were misconfigured).
