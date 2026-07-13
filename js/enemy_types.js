@@ -82,20 +82,31 @@ const enemyTypes = [
     }
 ];
 
+// Each enemy appears only within its [min, max] player-level range. Weaker
+// early enemies phase out at higher levels; late-game threats (no max) stay
+// in the pool forever once unlocked.
+const ENEMY_LEVEL_RANGES = {
+    "ゴブリン": [1, 10],
+    "スケルトン": [3, 11],
+    "オーガ": [5, 14],
+    "トロール": [6, 15],
+    "ゴースト": [7, 16],
+    "ウィザード": [8, 18],
+    "デーモン": [10, Infinity],
+    "ジャイアント": [12, Infinity],
+    "シェード": [15, Infinity],
+    "ドラゴン": [18, Infinity]
+};
+
 // Function to get available enemy types based on player level
 function getAvailableEnemyTypes(playerLevel) {
-    let maxEnemyType;
-    if (playerLevel < 3) {
-        maxEnemyType = 2; // Only Goblins and Ogres in early levels
-    } else if (playerLevel < 6) {
-        maxEnemyType = 4; // Up to Skeletons
-    } else if (playerLevel < 10) {
-        maxEnemyType = 6; // Up to Demons
-    } else if (playerLevel < 15) {
-        maxEnemyType = 8; // Up to Shades
-    } else {
-        maxEnemyType = 9; // All enemy types available at level 15+
-    }
-    
-    return enemyTypes.slice(0, maxEnemyType + 1);
+    const available = enemyTypes.filter(type => {
+        const range = ENEMY_LEVEL_RANGES[type.name];
+        if (!range) return true;
+        const [min, max] = range;
+        return playerLevel >= min && playerLevel <= max;
+    });
+
+    // Safety net: never return an empty pool (e.g. if ranges were misconfigured).
+    return available.length > 0 ? available : [enemyTypes[0]];
 }
