@@ -86,8 +86,10 @@ function initPlayerWeapons() {
 
 // Function to get available weapon upgrades based on player level
 function getAvailableWeapons(playerLevel) {
-    // All weapons are available from the start
-    return weaponTypes;
+    // All weapons are available from the start. Return a copy: callers
+    // splice this array to build random selections, and must not mutate
+    // the shared weaponTypes master list.
+    return weaponTypes.slice();
 }
 
 // Function to check if player already has a weapon
