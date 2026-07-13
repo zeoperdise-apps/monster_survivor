@@ -1,8 +1,10 @@
 # Monster Survivor - プロジェクト仕様書
 
 ## 起動方法
-- ビルド不要の静的HTML/CSS/JavaScriptゲーム。`index.html`をブラウザで開くだけで遊べる
-- 画像の相対パス読み込みなどを安定させるため、VSCodeのLive Server拡張機能などローカルサーバー経由での起動を推奨
+- 以下のURLにアクセスするだけですぐに遊べる（インストール不要）
+  - https://zeoperdise-apps.github.io/monster_survivor/
+- ローカルで動かす場合: ビルド不要の静的HTML/CSS/JavaScriptゲームなので、`index.html`をブラウザで開くだけで遊べる
+  - 画像の相対パス読み込みなどを安定させるため、VSCodeのLive Server拡張機能などローカルサーバー経由での起動を推奨
 
 ## 操作方法
 - 移動: `WASD` または矢印キー
