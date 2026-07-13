@@ -1048,11 +1048,18 @@ function levelUp() {
     // 選択可能なアップグレード（武器・アクセサリー）をまとめたリストを作成する
     const upgradeOptions = [];
 
+    // 所持中でレベルMAXに達した武器は、選んでも何も起きない選択肢に
+    // なってしまうため、以降のすべての候補プールから除外する。
+    const isWeaponMaxed = weaponTypeEntry => {
+        const owned = player.weapons.find(w => w.name === weaponTypeEntry.name);
+        return !!owned && owned.level >= owned.maxLevel;
+    };
+
     // このレベルで選択可能な武器を取得する。既に武器数の上限（4つ）に
     // 達している場合は新しい武器種を装備できないため、選んでも何も
     // 起きない選択肢にならないよう、既に所持している武器のみを提示する。
     const atMaxWeapons = player.weapons.length >= 4;
-    const availableWeapons = getAvailableWeapons(player.level);
+    const availableWeapons = getAvailableWeapons(player.level).filter(w => !isWeaponMaxed(w));
     const weaponOptions = [];
 
     // まだ所持していない武器を最大2種類選ぶ
@@ -1071,7 +1078,7 @@ function levelUp() {
 
     // 2種類揃わない場合は、既存の武器で埋める
     if (weaponOptions.length < 2) {
-        const allWeapons = getAvailableWeapons(player.level);
+        const allWeapons = getAvailableWeapons(player.level).filter(w => !isWeaponMaxed(w));
         for (let i = 0; i < 2 - weaponOptions.length; i++) {
             const randomWeapon = allWeapons[Math.floor(Math.random() * allWeapons.length)];
             // randomWeaponのnameにアクセスする前に有効な値か確認する
@@ -1089,10 +1096,17 @@ function levelUp() {
         });
     });
 
-    // レベルアップモーダルにアクセサリーの選択肢を追加する（プレイヤーが
-    // まだ持っていないアクセサリーのみ。全種類を所持済みの場合はここで
-    // 何も提示されず、その枠は下の武器での穴埋め処理に回る）
-    const availableAccessories = accessoryTypes.filter(a => !hasAccessory(player, a.name));
+    // レベルアップモーダルにアクセサリーの選択肢を追加する。アクセサリーは
+    // 最大4種類まで所持可能。既に上限に達している場合は新しい種類を提示せず、
+    // 既に所持していて最大レベルに達していないものだけをレベルアップとして
+    // 提示する（提示するものがなければ、この枠は下の武器での穴埋め処理に回る）。
+    const atMaxAccessories = player.accessories.length >= 4;
+    const availableAccessories = atMaxAccessories
+        ? accessoryTypes.filter(a => {
+            const owned = player.accessories.find(o => o.name === a.name);
+            return owned && owned.level < a.maxLevel;
+        })
+        : accessoryTypes.filter(a => !hasAccessory(player, a.name));
     const accessoryOptions = [];
 
     while (accessoryOptions.length < 1 && availableAccessories.length > 0) {
@@ -1120,7 +1134,7 @@ function levelUp() {
     // 上限に達している場合は、既に所持している武器（レベルアップ用）のみで
     // 穴埋めし、装備できない新しい武器種は絶対に入れない。
     while (upgradeOptions.length < 3) {
-        const allWeapons = getAvailableWeapons(player.level);
+        const allWeapons = getAvailableWeapons(player.level).filter(w => !isWeaponMaxed(w));
         const candidatePool = atMaxWeapons ? allWeapons.filter(w => hasWeapon(player, w.name)) : allWeapons;
         if (candidatePool.length === 0) break; // 穴埋めに使えるものがもうない
 
