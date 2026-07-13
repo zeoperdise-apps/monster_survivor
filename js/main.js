@@ -1275,7 +1275,10 @@ function updateUI() {
             const accessoryType = getAccessoryByName(accessory.name);
             const title = `${accessory.name} Lv.${accessory.level}`;
             if (accessoryType && accessoryType.img) {
-                return `<img src="${accessoryType.img}" alt="${accessory.name}" title="${title}" style="width: 28px; height: 28px; margin-right: 4px;">`;
+                return `<span class="icon-badge" title="${title}">
+                    <img src="${accessoryType.img}" alt="${accessory.name}">
+                    <span class="icon-badge-level">${accessory.level}</span>
+                </span>`;
             }
             return '';
         }).join('');
