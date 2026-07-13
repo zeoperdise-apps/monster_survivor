@@ -6,6 +6,8 @@ const fortresses = [];
 const FORTRESS_ENEMY_COUNT_BASE = 8;
 const FORTRESS_CLEAR_REWARD_GEMS = 10;
 const FORTRESS_RESPAWN_DELAY = 180; // クリア後、再出現までのフレーム数（3秒）
+const FORTRESS_ICON_RADIUS = 120; // 描画アイコンの半径（以前の2倍）
+const VILLAGE_ICON_RADIUS = 100; // 描画アイコンの半径（当たり判定用のvillage.radiusとは別。以前の2倍）
 
 function createVillage(x, y) {
     const village = { x: x, y: y, radius: 50, consumed: false, img: null };
@@ -19,7 +21,7 @@ function createFortress(x, y) {
         id: `f${Math.random().toString(36).slice(2)}`,
         x: x,
         y: y,
-        radius: 260,
+        radius: 520, // 侵入判定・封じ込め範囲（以前の2倍）
         state: 'idle', // 'idle'（待機中）| 'active'（戦闘中）| 'cleared'（クリア済み）
         clearedAt: 0,
         img: null
@@ -67,7 +69,7 @@ function activateFortress(fortress) {
 
     // 守護者: 現在出現可能な敵の中で最も強いタイプを強化したもの
     const guardianType = availableTypes[availableTypes.length - 1];
-    const guardian = createEnemy(guardianType, fortress.x, fortress.y - 60);
+    const guardian = createEnemy(guardianType, fortress.x, fortress.y - FORTRESS_ICON_RADIUS);
     guardian.hp *= 4;
     guardian.maxHp = guardian.hp;
     guardian.radius *= 1.4;
@@ -147,10 +149,10 @@ function clampPlayerToActiveFortress() {
 function drawVillage(village) {
     if (village.consumed) return;
     if (village.img && village.img.complete && village.img.naturalWidth !== 0) {
-        ctx.drawImage(village.img, village.x - cameraX - village.radius, village.y - cameraY - village.radius, village.radius * 2, village.radius * 2);
+        ctx.drawImage(village.img, village.x - cameraX - VILLAGE_ICON_RADIUS, village.y - cameraY - VILLAGE_ICON_RADIUS, VILLAGE_ICON_RADIUS * 2, VILLAGE_ICON_RADIUS * 2);
     } else {
         ctx.beginPath();
-        ctx.arc(village.x - cameraX, village.y - cameraY, village.radius, 0, Math.PI * 2);
+        ctx.arc(village.x - cameraX, village.y - cameraY, VILLAGE_ICON_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = '#c8a060';
         ctx.fill();
         ctx.closePath();
@@ -161,10 +163,10 @@ function drawFortress(fortress) {
     if (fortress.state === 'cleared') return;
 
     if (fortress.img && fortress.img.complete && fortress.img.naturalWidth !== 0) {
-        ctx.drawImage(fortress.img, fortress.x - cameraX - 60, fortress.y - cameraY - 60, 120, 120);
+        ctx.drawImage(fortress.img, fortress.x - cameraX - FORTRESS_ICON_RADIUS, fortress.y - cameraY - FORTRESS_ICON_RADIUS, FORTRESS_ICON_RADIUS * 2, FORTRESS_ICON_RADIUS * 2);
     } else {
         ctx.beginPath();
-        ctx.arc(fortress.x - cameraX, fortress.y - cameraY, 60, 0, Math.PI * 2);
+        ctx.arc(fortress.x - cameraX, fortress.y - cameraY, FORTRESS_ICON_RADIUS, 0, Math.PI * 2);
         ctx.fillStyle = fortress.state === 'active' ? '#a33' : '#666';
         ctx.fill();
         ctx.closePath();
