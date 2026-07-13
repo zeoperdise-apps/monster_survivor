@@ -165,3 +165,30 @@ canvas {
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+.icon-badge {
+    position: relative;
+    display: inline-block;
+    width: 28px;
+    height: 28px;
+    margin-right: 4px;
+}
+
+.icon-badge img {
+    width: 100%;
+    height: 100%;
+    display: block;
+}
+
+.icon-badge-level {
+    position: absolute;
+    right: -2px;
+    bottom: -2px;
+    background: rgba(0, 0, 0, 0.75);
+    color: #fff;
+    font-size: 10px;
+    line-height: 1;
+    padding: 1px 3px;
+    border-radius: 3px;
+    pointer-events: none;
+}

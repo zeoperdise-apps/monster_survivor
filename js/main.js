@@ -1246,7 +1246,10 @@ function updateUI() {
             const weaponType = getWeaponByName(weapon.name);
             const title = `${weapon.name} Lv.${weapon.level}`;
             if (weaponType && weaponType.img) {
-                return `<img src="${weaponType.img}" alt="${weapon.name}" title="${title}" style="width: 28px; height: 28px; margin-right: 4px;">`;
+                return `<span class="icon-badge" title="${title}">
+                    <img src="${weaponType.img}" alt="${weapon.name}">
+                    <span class="icon-badge-level">${weapon.level}</span>
+                </span>`;
             }
             return '';
         }).join('');
