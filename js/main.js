@@ -136,12 +136,17 @@ window.addEventListener('keydown', e => {
     }
 });
 
-// ゲームスピードの変更: +/-キーで0.5倍刻みに増減させる（1〜4倍の範囲）
+// ゲームスピードの変更: +/-キーで0.5倍刻みに増減させる（1〜4倍の範囲）。
+// キーボード配列やテンキーの有無によって物理キーのcodeが異なる場合が
+// あるため、想定される主要キーとkey（実際に入力された文字）の両方で判定する。
+const isSpeedUpKey = e => e.code === 'Equal' || e.code === 'NumpadAdd' || e.key === '+' || e.key === '=';
+const isSpeedDownKey = e => e.code === 'Minus' || e.code === 'NumpadSubtract' || e.key === '-';
+
 window.addEventListener('keydown', e => {
-    if (e.code === 'Equal') {
+    if (isSpeedUpKey(e)) {
         gameSpeed = Math.min(GAME_SPEED_MAX, Math.round((gameSpeed + GAME_SPEED_STEP) * 10) / 10);
         showToast(`ゲームスピード: ${gameSpeed}倍`);
-    } else if (e.code === 'Minus') {
+    } else if (isSpeedDownKey(e)) {
         gameSpeed = Math.max(GAME_SPEED_MIN, Math.round((gameSpeed - GAME_SPEED_STEP) * 10) / 10);
         showToast(`ゲームスピード: ${gameSpeed}倍`);
     }
