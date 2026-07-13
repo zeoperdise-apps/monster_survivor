@@ -204,14 +204,18 @@ window.addEventListener('keydown', e => {
 
 // 弾クラス
 class Projectile {
-    constructor(x, y, targetX, targetY, damage, splashRadius = 0, color = '#ff0', arc = false, blast = false, axe = false, arrow = false) {
+    constructor(x, y, targetX, targetY, damage, splashRadius = 0, color = '#ff0', arc = false, blast = false, axe = false, arrow = false, boomerang = false) {
         this.x = x;
         this.y = y;
         this.blast = blast;
         this.axe = axe;
         this.arrow = arrow;
+        this.boomerang = boomerang;
+        this.piercing = boomerang;
+        this.hitEnemies = boomerang ? new Map() : null;
+        this.reversed = false;
         this.rotation = 0;
-        this.radius = blast ? 9 : 5;
+        this.radius = blast ? 9 : (boomerang ? 8 : 5);
         this.color = color;
         this.damage = damage;
         this.speed = 7;
@@ -222,6 +226,13 @@ class Projectile {
         const dy = targetY - y;
         const dist = Math.sqrt(dx * dx + dy * dy) || 1;
         this.angle = Math.atan2(dy, dx);
+
+        if (boomerang) {
+            // 出発地点からの飛行距離を測るための基準点と、折り返すまでの距離を覚えておく
+            this.originX = x;
+            this.originY = y;
+            this.maxRange = dist;
+        }
 
         if (arc) {
             // 直線ではなく2次ベジエ曲線で目標に向かって弧を描く。
@@ -244,7 +255,7 @@ class Projectile {
     }
 
     update() {
-        if (this.axe) {
+        if (this.axe || this.boomerang) {
             this.rotation += 0.35;
         }
 
@@ -260,6 +271,17 @@ class Projectile {
         } else {
             this.x += this.vx;
             this.y += this.vy;
+
+            if (this.boomerang && !this.reversed) {
+                // 出発地点から射程まで届いたら、逆方向へ折り返す（帰り道でプレイヤーを
+                // 通り過ぎ、そのまま後方へ飛んでいき、画面外に出て消える）
+                const traveled = Math.hypot(this.x - this.originX, this.y - this.originY);
+                if (traveled >= this.maxRange) {
+                    this.vx = -this.vx;
+                    this.vy = -this.vy;
+                    this.reversed = true;
+                }
+            }
         }
 
         if (this.arrow) {
@@ -303,6 +325,35 @@ class Projectile {
             ctx.moveTo(-10, 0);
             ctx.lineTo(-5, 3);
             ctx.stroke();
+
+            ctx.restore();
+            return;
+        }
+
+        if (this.boomerang) {
+            // 回転しながら飛ぶV字形のブーメラン
+            const screenX = this.x - cameraX;
+            const screenY = this.y - cameraY;
+            ctx.save();
+            ctx.translate(screenX, screenY);
+            ctx.rotate(this.rotation);
+
+            ctx.fillStyle = this.color;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-12, -9);
+            ctx.lineTo(-7, -11);
+            ctx.lineTo(2, -2);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(-12, 9);
+            ctx.lineTo(-7, 11);
+            ctx.lineTo(2, 2);
+            ctx.closePath();
+            ctx.fill();
 
             ctx.restore();
             return;
@@ -701,6 +752,20 @@ function fireThrownWeapon(weapon, damage) {
     return true;
 }
 
+// ブーメランは狙いを定めず、向いている方向へまっすぐ投げつける。射程まで
+// 届くと反転し、プレイヤーを通り過ぎて後方へ飛び続け、画面外に出るまで
+// 前方・後方どちらの敵も貫通してダメージを与え続ける。
+const BOOMERANG_HIT_COOLDOWN = 20; // 同じ敵への連続ヒットを防ぐフレーム間隔
+
+function fireBoomerangWeapon(weapon, damage) {
+    const dir = player.facingRight ? 1 : -1;
+    const targetX = player.x + dir * weapon.range;
+    const targetY = player.y;
+
+    projectiles.push(new Projectile(player.x, player.y, targetX, targetY, damage, 0, '#3ad9c0', false, false, false, false, true));
+    return true;
+}
+
 function handleCombat() {
     for (const weapon of player.weapons) {
         const cooldown = getEffectiveCooldown(weapon);
@@ -718,6 +783,8 @@ function handleCombat() {
             fired = fireMagicWeapon(weapon, damage);
         } else if (weaponType.type === 'thrown') {
             fired = fireThrownWeapon(weapon, damage);
+        } else if (weaponType.type === 'boomerang') {
+            fired = fireBoomerangWeapon(weapon, damage);
         }
 
         if (fired) weapon.lastFire = frameCount;
@@ -734,6 +801,29 @@ function handleCombat() {
             p.y < cameraY - 50 || p.y > cameraY + canvas.height + 50 ||
             (p.arc && p.t >= 1)) {
             projectiles.splice(i, 1);
+            continue;
+        }
+
+        if (p.piercing) {
+            // 貫通する弾（ブーメラン）: 敵に当たっても消えず、同じ敵への
+            // 連続ヒットのみクールダウンで防ぐ。障害物とは衝突しない。
+            for (let j = enemies.length - 1; j >= 0; j--) {
+                const e = enemies[j];
+                const dist = Math.hypot(p.x - e.x, p.y - e.y);
+                if (dist < p.radius + e.radius) {
+                    const lastHit = p.hitEnemies.get(e);
+                    if (lastHit === undefined || frameCount - lastHit >= BOOMERANG_HIT_COOLDOWN) {
+                        p.hitEnemies.set(e, frameCount);
+                        e.hp -= p.damage;
+                        effects.push(new Effect(e.x, e.y, 'hit'));
+                        if (e.hp <= 0) {
+                            gems.push(new Gem(e.x, e.y, e.xp));
+                            enemies.splice(j, 1);
+                            addBattleLog(`${e.name}を倒した！`);
+                        }
+                    }
+                }
+            }
             continue;
         }
 

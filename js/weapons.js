@@ -66,6 +66,16 @@ const weaponTypes = [
         img: "img/spear.png",
         description: "向いている方向への突き攻撃",
         effect: "thrust"
+    },
+    {
+        name: "ブーメラン",
+        type: "boomerang",
+        damage: 18,
+        cooldown: 85,
+        range: 220,
+        maxLevel: 8,
+        img: "img/boomerang.png",
+        description: "前方の敵を貫通して飛び、帰りに後方の敵も攻撃する。画面外に出るまで飛び続ける"
     }
 ];
 
