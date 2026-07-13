@@ -714,6 +714,7 @@ function fireMeleeWeapon(weapon, damage) {
         if (isInMeleeArc(dx, dy, dist)) {
             e.hp -= damage;
             effects.push(new Effect(e.x, e.y, 'hit'));
+            addBattleLog(`${weapon.name}で${e.name}に${Math.round(damage)}のダメージ`);
 
             if (e.hp <= 0) {
                 gems.push(new Gem(e.x, e.y, e.xp));
@@ -751,7 +752,9 @@ function fireRangedWeapon(weapon, damage) {
     const weaponType = getWeaponByName(weapon.name);
     const isArc = !!(weaponType && weaponType.arc);
     const isArrow = !!(weaponType && weaponType.projectileShape === 'arrow');
-    projectiles.push(new Projectile(player.x, player.y, target.x, target.y, damage, 0, '#ff0', isArc, false, false, isArrow));
+    const proj = new Projectile(player.x, player.y, target.x, target.y, damage, 0, '#ff0', isArc, false, false, isArrow);
+    proj.sourceLabel = `${weapon.name}で`;
+    projectiles.push(proj);
     effects.push(new Effect(player.x, player.y, 'attack'));
     return true;
 }
@@ -771,7 +774,9 @@ function fireMagicWeapon(weapon, damage) {
     if (!target) return false;
 
     const isBlast = !!(weaponType && weaponType.effect === 'blast');
-    projectiles.push(new Projectile(player.x, player.y, target.x, target.y, damage, 60, '#a0f', false, isBlast));
+    const proj = new Projectile(player.x, player.y, target.x, target.y, damage, 60, '#a0f', false, isBlast);
+    proj.sourceLabel = `${weapon.name}で`;
+    projectiles.push(proj);
     effects.push(new Effect(player.x, player.y, 'attack'));
     return true;
 }
@@ -783,7 +788,9 @@ function fireThrownWeapon(weapon, damage) {
     const targetX = player.x + dir * weapon.range;
     const targetY = player.y;
 
-    projectiles.push(new Projectile(player.x, player.y, targetX, targetY, damage, 0, '#c68a3c', true, false, true));
+    const proj = new Projectile(player.x, player.y, targetX, targetY, damage, 0, '#c68a3c', true, false, true);
+    proj.sourceLabel = `${weapon.name}で`;
+    projectiles.push(proj);
     return true;
 }
 
@@ -797,7 +804,9 @@ function fireBoomerangWeapon(weapon, damage) {
     const targetX = player.x + dir * weapon.range;
     const targetY = player.y;
 
-    projectiles.push(new Projectile(player.x, player.y, targetX, targetY, damage, 0, '#3ad9c0', false, false, false, false, true));
+    const proj = new Projectile(player.x, player.y, targetX, targetY, damage, 0, '#3ad9c0', false, false, false, false, true);
+    proj.sourceLabel = `${weapon.name}で`;
+    projectiles.push(proj);
     return true;
 }
 
@@ -851,10 +860,11 @@ function handleCombat() {
                         p.hitEnemies.set(e, frameCount);
                         e.hp -= p.damage;
                         effects.push(new Effect(e.x, e.y, 'hit'));
+                        addBattleLog(`${p.sourceLabel}${e.name}に${Math.round(p.damage)}のダメージ`);
                         if (e.hp <= 0) {
                             gems.push(new Gem(e.x, e.y, e.xp));
                             enemies.splice(j, 1);
-                            addBattleLog(`${e.name}を倒した！`);
+                            addBattleLog(`${p.sourceLabel}${e.name}を倒した！`);
                         }
                     }
                 }
@@ -876,20 +886,22 @@ function handleCombat() {
                         if (d2 <= p.splashRadius) {
                             e2.hp -= p.damage;
                             effects.push(new Effect(e2.x, e2.y, 'hit'));
+                            addBattleLog(`${p.sourceLabel}${e2.name}に${Math.round(p.damage)}のダメージ`);
                             if (e2.hp <= 0) {
                                 gems.push(new Gem(e2.x, e2.y, e2.xp));
                                 enemies.splice(k, 1);
-                                addBattleLog(`${e2.name}を倒した！`);
+                                addBattleLog(`${p.sourceLabel}${e2.name}を倒した！`);
                             }
                         }
                     }
                 } else {
                     e.hp -= p.damage;
                     effects.push(new Effect(e.x, e.y, 'hit'));
+                    addBattleLog(`${p.sourceLabel}${e.name}に${Math.round(p.damage)}のダメージ`);
                     if (e.hp <= 0) {
                         gems.push(new Gem(e.x, e.y, e.xp));
                         enemies.splice(j, 1);
-                        addBattleLog(`${e.name}を倒した！`);
+                        addBattleLog(`${p.sourceLabel}${e.name}を倒した！`);
                     }
                 }
 

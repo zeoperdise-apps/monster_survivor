@@ -188,6 +188,7 @@ function performNpcAttack(npc, target) {
     if (attackType === 'melee') {
         target.hp -= job.damage;
         effects.push(new Effect(target.x, target.y, 'hit'));
+        addBattleLog(`${npc.name}が${target.name}に${job.damage}のダメージ`);
         if (target.hp <= 0) {
             gems.push(new Gem(target.x, target.y, target.xp));
             const idx = enemies.indexOf(target);
@@ -198,7 +199,9 @@ function performNpcAttack(npc, target) {
     }
 
     if (attackType === 'ranged') {
-        projectiles.push(new Projectile(npc.x, npc.y, target.x, target.y, job.damage, 0, '#0ff'));
+        const proj = new Projectile(npc.x, npc.y, target.x, target.y, job.damage, 0, '#0ff');
+        proj.sourceLabel = `${npc.name}が`;
+        projectiles.push(proj);
         return true;
     }
 
