@@ -1202,15 +1202,16 @@ function updateUI() {
     document.getElementById('next-xp-val').innerText = player.nextXp;
     document.getElementById('hp-val').innerText = Math.ceil(player.hp);
 
-    // Update weapon information display: every equipped weapon with its level
+    // Weapon display: icons only (name/level available via tooltip on hover)
     const weaponInfoElement = document.getElementById('weapon-info');
     if (weaponInfoElement) {
         weaponInfoElement.innerHTML = player.weapons.map(weapon => {
             const weaponType = getWeaponByName(weapon.name);
+            const title = `${weapon.name} Lv.${weapon.level}`;
             if (weaponType && weaponType.img) {
-                return `<div><img src="${weaponType.img}" alt="${weapon.name}" style="width: 24px; height: 24px; vertical-align: middle;"> ${weapon.name} Lv.${weapon.level}</div>`;
+                return `<img src="${weaponType.img}" alt="${weapon.name}" title="${title}" style="width: 28px; height: 28px; margin-right: 4px;">`;
             }
-            return `<div>${weapon.name} Lv.${weapon.level}</div>`;
+            return '';
         }).join('');
     }
 
@@ -1227,15 +1228,16 @@ function updateUI() {
         `;
     }
 
-    // Display every acquired accessory with its level
+    // Accessory display: icons only (name/level available via tooltip on hover)
     const accessoryInfoElement = document.getElementById('accessory-info');
     if (accessoryInfoElement) {
         accessoryInfoElement.innerHTML = player.accessories.map(accessory => {
             const accessoryType = getAccessoryByName(accessory.name);
+            const title = `${accessory.name} Lv.${accessory.level}`;
             if (accessoryType && accessoryType.img) {
-                return `<div><img src="${accessoryType.img}" alt="${accessory.name}" style="width: 24px; height: 24px; vertical-align: middle;"> ${accessory.name} Lv.${accessory.level}</div>`;
+                return `<img src="${accessoryType.img}" alt="${accessory.name}" title="${title}" style="width: 28px; height: 28px; margin-right: 4px;">`;
             }
-            return `<div>${accessory.name} Lv.${accessory.level}</div>`;
+            return '';
         }).join('');
     }
 
