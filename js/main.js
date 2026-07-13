@@ -579,6 +579,22 @@ function fireMeleeWeapon(weapon, damage) {
         }
     }
 
+    for (const o of obstacles) {
+        const dx = o.x - player.x;
+        const dy = o.y - player.y;
+        const dist = Math.sqrt(dx * dx + dy * dy);
+
+        if (dist <= weapon.range &&
+            ((player.facingRight && dx > 0) || (!player.facingRight && dx < 0))) {
+            o.hp -= damage;
+            effects.push(new Effect(o.x, o.y, 'hit'));
+
+            if (o.hp <= 0) {
+                destroyObstacle(o);
+            }
+        }
+    }
+
     const weaponType = getWeaponByName(weapon.name);
     const effectType = (weaponType && weaponType.effect) || 'whip';
     const effectDuration = (weaponType && weaponType.effectDuration) || 30;
@@ -665,6 +681,8 @@ function handleCombat() {
             continue;
         }
 
+        let hitSomething = false;
+
         for (let j = enemies.length - 1; j >= 0; j--) {
             const e = enemies[j];
             const dist = Math.sqrt((p.x - e.x) ** 2 + (p.y - e.y) ** 2);
@@ -694,9 +712,28 @@ function handleCombat() {
                     }
                 }
 
-                projectiles.splice(i, 1);
+                hitSomething = true;
                 break;
             }
+        }
+
+        if (!hitSomething) {
+            for (const o of obstacles) {
+                const distO = Math.sqrt((p.x - o.x) ** 2 + (p.y - o.y) ** 2);
+                if (distO < p.radius + o.radius) {
+                    o.hp -= p.damage;
+                    effects.push(new Effect(o.x, o.y, 'hit'));
+                    if (o.hp <= 0) {
+                        destroyObstacle(o);
+                    }
+                    hitSomething = true;
+                    break;
+                }
+            }
+        }
+
+        if (hitSomething) {
+            projectiles.splice(i, 1);
         }
     }
 }
@@ -799,6 +836,7 @@ function updatePlayer() {
     }
 
     clampPlayerToActiveFortress();
+    resolvePlayerObstacleCollisions();
 
     // Update camera to follow player (keep player centered)
     cameraX = player.x - canvas.width / 2;
@@ -1201,6 +1239,7 @@ function updateUI() {
     document.getElementById('xp-val').innerText = player.xp;
     document.getElementById('next-xp-val').innerText = player.nextXp;
     document.getElementById('hp-val').innerText = Math.ceil(player.hp);
+    document.getElementById('gold-val').innerText = goldCoins;
 
     // Weapon display: icons only (name/level available via tooltip on hover)
     const weaponInfoElement = document.getElementById('weapon-info');
@@ -1311,10 +1350,14 @@ function gameLoop() {
     updatePlayer();
     handleCombat();
     updateStructures();
+    updateObstacleSpawns();
 
     // Update and draw villages/fortresses with camera offset
     villages.forEach(v => drawVillage(v));
     fortresses.forEach(f => drawFortress(f));
+
+    // Draw destructible obstacles with camera offset
+    obstacles.forEach(o => drawObstacle(o));
 
     // Update and draw effects
     for (let i = effects.length - 1; i >= 0; i--) {
