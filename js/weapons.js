@@ -1,10 +1,10 @@
-// Weapon definitions with different attack types and levels
+// 攻撃タイプとレベルが異なる武器の定義
 const weaponTypes = [
-    { 
-        name: "鞭", 
+    {
+        name: "鞭",
         type: "melee",
         damage: 15,
-        cooldown: 40,
+        cooldown: 30,
         range: 135,
         maxLevel: 8,
         img: "img/whip.png",
@@ -26,8 +26,8 @@ const weaponTypes = [
         name: "弓",
         type: "ranged",
         damage: 20,
-        cooldown: 50,
-        range: 140,
+        cooldown: 90,
+        range: 300,
         maxLevel: 8,
         img: "img/bow.png",
         description: "弧を描いて飛ぶ矢の射撃",
@@ -37,8 +37,8 @@ const weaponTypes = [
     {
         name: "杖",
         type: "magic",
-        damage: 30,
-        cooldown: 70,
+        damage: 20,
+        cooldown: 120,
         range: 150,
         maxLevel: 8,
         img: "img/staff.png",
@@ -49,9 +49,9 @@ const weaponTypes = [
     {
         name: "斧",
         type: "thrown",
-        damage: 35,
-        cooldown: 80,
-        range: 240,
+        damage: 30,
+        cooldown: 100,
+        range: 200,
         maxLevel: 8,
         img: "img/axe.png",
         description: "弧を描きながら進行方向に投げつける"
@@ -60,8 +60,8 @@ const weaponTypes = [
         name: "槍",
         type: "melee",
         damage: 28,
-        cooldown: 55,
-        range: 160,
+        cooldown: 70,
+        range: 150,
         maxLevel: 8,
         img: "img/spear.png",
         description: "向いている方向への突き攻撃",
@@ -69,7 +69,7 @@ const weaponTypes = [
     }
 ];
 
-// Player weapons system
+// プレイヤーの初期武器
 function initPlayerWeapons() {
     return [
         {
@@ -84,43 +84,42 @@ function initPlayerWeapons() {
     ];
 }
 
-// Function to get available weapon upgrades based on player level
+// プレイヤーレベルに応じて選択可能な武器一覧を取得する
 function getAvailableWeapons(playerLevel) {
-    // All weapons are available from the start. Return a copy: callers
-    // splice this array to build random selections, and must not mutate
-    // the shared weaponTypes master list.
+    // 現状は最初から全武器が選択可能。呼び出し元がこの配列をsplice()して
+    // ランダム選択を作るため、コピーを返し、共有元のweaponTypesを
+    // 直接変更しないようにする。
     return weaponTypes.slice();
 }
 
-// Function to check if player already has a weapon
+// プレイヤーが既にその武器を所持しているか確認する
 function hasWeapon(player, weaponName) {
     return player.weapons.some(weapon => weapon.name === weaponName);
 }
 
-// Function to add a new weapon to player's inventory
+// プレイヤーの所持武器に新しい武器を追加する
 function addWeaponToPlayer(player, weaponName) {
-    // Check if player already has this weapon
+    // 既に所持している場合はレベルアップ扱いにする
     if (hasWeapon(player, weaponName)) {
-        // If they have it, level it up instead
         const weapon = player.weapons.find(w => w.name === weaponName);
         if (weapon.level < weapon.maxLevel) {
             weapon.level++;
-            // Increase stats based on level
+            // レベルに応じてステータスを強化
             const baseWeapon = weaponTypes.find(w => w.name === weaponName);
             if (baseWeapon) {
                 weapon.damage = Math.floor(baseWeapon.damage * (1 + (weapon.level - 1) * 0.2));
                 weapon.cooldown = Math.max(10, Math.floor(baseWeapon.cooldown * (1 - (weapon.level - 1) * 0.1)));
             }
         }
-        return false; // Weapon already existed and was leveled up
+        return false; // 既に所持していたのでレベルアップとして処理した
     }
-    
-    // Check if player has max weapons
+
+    // 所持武器が上限に達しているか確認
     if (player.weapons.length >= 4) {
-        return false; // Max weapons reached
+        return false; // 武器数の上限に達している
     }
-    
-    // Add new weapon
+
+    // 新しい武器を追加
     const baseWeapon = weaponTypes.find(w => w.name === weaponName);
     if (baseWeapon) {
         const newWeapon = {
@@ -135,11 +134,11 @@ function addWeaponToPlayer(player, weaponName) {
         player.weapons.push(newWeapon);
         return true;
     }
-    
+
     return false;
 }
 
-// Function to get weapon by name
+// 名前から武器の定義データを取得する
 function getWeaponByName(weaponName) {
     return weaponTypes.find(w => w.name === weaponName);
 }
