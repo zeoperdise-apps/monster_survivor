@@ -898,47 +898,14 @@ function levelUp() {
         });
     });
 
-    // Add a random level-up option (10% chance)
-    if (Math.random() < 0.1) { // 10% chance for random option
-        const randomUpgrade = Math.floor(Math.random() * 4);
-        switch(randomUpgrade) {
-            case 0: // Increase damage
-                upgradeOptions.push({
-                    type: 'random',
-                    data: {
-                        name: "Damage Boost",
-                        description: "すべての武器の攻撃力が10%上昇"
-                    }
-                });
-                break;
-            case 1: // Increase fire rate
-                upgradeOptions.push({
-                    type: 'random',
-                    data: {
-                        name: "Faster Fire Rate",
-                        description: "すべての武器の射撃速度が15%上昇"
-                    }
-                });
-                break;
-            case 2: // Increase move speed
-                upgradeOptions.push({
-                    type: 'random',
-                    data: {
-                        name: "Speed Boost",
-                        description: "移動速度が10%上昇"
-                    }
-                });
-                break;
-            case 3: // Heal & Max HP Up
-                upgradeOptions.push({
-                    type: 'random',
-                    data: {
-                        name: "Heal & Max HP Up",
-                        description: "回復＆最大HPアップ"
-                    }
-                });
-                break;
-        }
+    // Add a random level-up option (10% chance). The option shown is the
+    // exact one applied on click (see RANDOM_UPGRADE_TYPES / selectRandomUpgrade).
+    if (Math.random() < 0.1) {
+        const randomType = RANDOM_UPGRADE_TYPES[Math.floor(Math.random() * RANDOM_UPGRADE_TYPES.length)];
+        upgradeOptions.push({
+            type: 'random',
+            data: randomType
+        });
     }
 
     // Add accessory options to the level up modal (only accessories the player doesn't have yet)
@@ -958,6 +925,13 @@ function levelUp() {
             data: accessory
         });
     });
+
+    // Cap at 3 options: weapons always contribute 2, and the random/accessory
+    // slots can occasionally push the total to 4. Drop extras at random so no
+    // one category is always the one discarded.
+    while (upgradeOptions.length > 3) {
+        upgradeOptions.splice(Math.floor(Math.random() * upgradeOptions.length), 1);
+    }
 
     // Ensure we have exactly 3 options (weapons + accessories)
     while (upgradeOptions.length < 3) {
@@ -989,7 +963,7 @@ function levelUp() {
         } else if (chosen.type === 'accessory') {
             addAccessoryToPlayer(player, chosen.data.name);
         } else {
-            applyRandomUpgradeEffect();
+            chosen.data.apply();
         }
         showToast(`レベルアップ（自動選択）: ${chosen.data.name}`);
         return;
@@ -1010,7 +984,7 @@ function levelUp() {
             } else if (option.type === 'accessory') {
                 return `<button class="upgrade-btn" onclick="selectAccessory('${option.data.name}')">${upgradeIcon(option.data)}${option.data.name} - ${option.data.description}</button>`;
             } else { // random upgrade
-                return `<button class="upgrade-btn" onclick="selectRandomUpgrade()">${option.data.name} - ${option.data.description}</button>`;
+                return `<button class="upgrade-btn" onclick="selectRandomUpgrade('${option.data.id}')">${option.data.name} - ${option.data.description}</button>`;
             }
         }).join('')}
         <br><br>
@@ -1030,31 +1004,50 @@ function skipLevelUp() {
     requestAnimationFrame(gameLoop);
 }
 
-// Applies one of the four random level-up bonuses (as a running stat bonus,
-// same as accessory bonuses). Shared by the manual and auto-levelup paths.
-function applyRandomUpgradeEffect() {
-    const upgradeType = Math.floor(Math.random() * 4);
-    switch(upgradeType) {
-        case 0: // Increase damage for all weapons
+// The rare (10% chance) random level-up bonuses. Each entry's `apply()` is
+// the one and only effect tied to that id, so the option the player sees and
+// clicks is always exactly what gets applied (no separate re-roll on click).
+const RANDOM_UPGRADE_TYPES = [
+    {
+        id: 'damage',
+        name: '攻撃力アップ',
+        description: 'すべての武器の攻撃力が10%上昇',
+        apply: () => {
             player.bonusDamage += 10;
-            break;
-        case 1: // Increase fire rate for all weapons
+        }
+    },
+    {
+        id: 'fireRate',
+        name: '射撃速度アップ',
+        description: 'すべての武器の射撃速度が15%上昇',
+        apply: () => {
             player.bonusFireRate += 15;
-            break;
-        case 2: // Increase move speed
+        }
+    },
+    {
+        id: 'speed',
+        name: '移動速度アップ',
+        description: '移動速度が10%上昇',
+        apply: () => {
             player.bonusSpeed += 10;
             applyPlayerStats();
-            break;
-        case 3: // Heal & Max HP Up
+        }
+    },
+    {
+        id: 'heal',
+        name: '回復＆最大HPアップ',
+        description: '最大HPが20%上昇し、全回復する',
+        apply: () => {
             player.bonusMaxHp += 20;
             applyPlayerStats();
             player.hp = player.maxHp;
-            break;
+        }
     }
-}
+];
 
-function selectRandomUpgrade() {
-    applyRandomUpgradeEffect();
+function selectRandomUpgrade(id) {
+    const type = RANDOM_UPGRADE_TYPES.find(t => t.id === id);
+    if (type) type.apply();
 
     isPaused = false;
     document.getElementById('level-up-modal').style.display = 'none';
