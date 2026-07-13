@@ -138,6 +138,12 @@ canvas {
     background: #044;
 }
 
+.debug-btn.selected {
+    background: #044;
+    border-color: #ff0;
+    box-shadow: 0 0 6px #ff0;
+}
+
 #battle-log {
     position: absolute;
     bottom: 10px;

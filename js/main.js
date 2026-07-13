@@ -133,37 +133,66 @@ window.addEventListener('keydown', e => {
         if (debugMode) {
             buildDebugMenu();
             menu.style.display = 'flex';
+            enableModalKeyboardNav('debug-menu');
         } else {
             menu.style.display = 'none';
+            disableModalKeyboardNav();
         }
     }
 });
 
-// Keyboard navigation for the level-up choice modal (arrow keys + Enter/Space)
-let upgradeButtons = [];
-let selectedUpgradeIndex = 0;
+// Generic keyboard navigation for any choice modal that lists .upgrade-btn
+// buttons (level-up choices, NPC recruitment, etc.): arrow keys move the
+// highlighted option, Enter/Space activates it.
+let activeModalId = null;
+let modalButtons = [];
+let selectedModalIndex = 0;
 
-function updateUpgradeSelection() {
-    upgradeButtons.forEach((btn, i) => {
-        btn.classList.toggle('selected', i === selectedUpgradeIndex);
+function updateModalSelection() {
+    modalButtons.forEach((btn, i) => {
+        btn.classList.toggle('selected', i === selectedModalIndex);
     });
 }
 
+// Call this right after populating a modal's innerHTML and showing it.
+function enableModalKeyboardNav(modalId) {
+    const modal = document.getElementById(modalId);
+    activeModalId = modalId;
+    modalButtons = modal ? Array.from(modal.querySelectorAll('.upgrade-btn, .debug-btn')) : [];
+    selectedModalIndex = 0;
+    updateModalSelection();
+}
+
+function disableModalKeyboardNav() {
+    activeModalId = null;
+    modalButtons = [];
+}
+
 window.addEventListener('keydown', e => {
-    const modal = document.getElementById('level-up-modal');
-    if (modal.style.display !== 'flex' || upgradeButtons.length === 0) return;
+    if (!activeModalId) return;
+    const modal = document.getElementById(activeModalId);
+    if (!modal || modal.style.display !== 'flex' || modalButtons.length === 0) return;
 
     if (e.code === 'ArrowDown' || e.code === 'ArrowRight') {
         e.preventDefault();
-        selectedUpgradeIndex = (selectedUpgradeIndex + 1) % upgradeButtons.length;
-        updateUpgradeSelection();
+        selectedModalIndex = (selectedModalIndex + 1) % modalButtons.length;
+        updateModalSelection();
     } else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') {
         e.preventDefault();
-        selectedUpgradeIndex = (selectedUpgradeIndex - 1 + upgradeButtons.length) % upgradeButtons.length;
-        updateUpgradeSelection();
+        selectedModalIndex = (selectedModalIndex - 1 + modalButtons.length) % modalButtons.length;
+        updateModalSelection();
     } else if (e.code === 'Enter' || e.code === 'Space') {
         e.preventDefault();
-        upgradeButtons[selectedUpgradeIndex].click();
+        modalButtons[selectedModalIndex].click();
+    }
+});
+
+// Retry button on the game-over screen also responds to Enter/Space.
+window.addEventListener('keydown', e => {
+    if (!isGameOver) return;
+    if (e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        location.reload();
     }
 });
 
@@ -955,9 +984,7 @@ function levelUp() {
     modal.innerHTML = modalContent;
     modal.style.display = 'flex';
 
-    upgradeButtons = Array.from(modal.querySelectorAll('.upgrade-btn'));
-    selectedUpgradeIndex = 0;
-    updateUpgradeSelection();
+    enableModalKeyboardNav('level-up-modal');
 }
 
 // Function to skip level up selection
@@ -1092,6 +1119,7 @@ function debugToggleInvincible() {
     invincible = !invincible;
     showToast(invincible ? '無敵: ON' : '無敵: OFF');
     buildDebugMenu();
+    enableModalKeyboardNav('debug-menu'); // rebuilt buttons are new DOM nodes
 }
 
 function debugKillAllEnemies() {
@@ -1137,6 +1165,8 @@ function openNpcSelectModal() {
         <button class="upgrade-btn" onclick="skipNpcSelect()">スキップする</button>
     `;
     modal.style.display = 'flex';
+
+    enableModalKeyboardNav('npc-select-modal');
 }
 
 function selectNpcJob(jobId) {
