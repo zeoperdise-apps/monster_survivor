@@ -684,15 +684,34 @@ function findNearestEnemyInRange(range) {
 
 // 近接武器はプレイヤーの向いている方向へ振り、その側の射程内にいる
 // すべての敵にダメージを与える。
+const SLASH_HIT_SPREAD = Math.PI / 2; // 剣の斬撃エフェクト（'slash'）と同じ90度の扇形
+
 function fireMeleeWeapon(weapon, damage) {
+    const weaponType = getWeaponByName(weapon.name);
+    const centerAngle = player.facingRight ? 0 : Math.PI;
+    // 剣は斬撃エフェクトと同じ90度の扇形に当たり判定を絞る。
+    // それ以外の近接武器は従来通り前方半円（180度）で判定する。
+    const hitSpread = (weaponType && weaponType.effect === 'slash') ? SLASH_HIT_SPREAD : null;
+
+    const isInMeleeArc = (dx, dy, dist) => {
+        if (dist > weapon.range) return false;
+        if (hitSpread !== null) {
+            const angle = Math.atan2(dy, dx);
+            let diff = angle - centerAngle;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            return Math.abs(diff) <= hitSpread / 2;
+        }
+        return player.facingRight ? dx > 0 : dx < 0;
+    };
+
     for (let j = enemies.length - 1; j >= 0; j--) {
         const e = enemies[j];
         const dx = e.x - player.x;
         const dy = e.y - player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist <= weapon.range &&
-            ((player.facingRight && dx > 0) || (!player.facingRight && dx < 0))) {
+        if (isInMeleeArc(dx, dy, dist)) {
             e.hp -= damage;
             effects.push(new Effect(e.x, e.y, 'hit'));
 
@@ -709,8 +728,7 @@ function fireMeleeWeapon(weapon, damage) {
         const dy = o.y - player.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
 
-        if (dist <= weapon.range &&
-            ((player.facingRight && dx > 0) || (!player.facingRight && dx < 0))) {
+        if (isInMeleeArc(dx, dy, dist)) {
             o.hp -= damage;
             effects.push(new Effect(o.x, o.y, 'hit'));
 
@@ -720,7 +738,6 @@ function fireMeleeWeapon(weapon, damage) {
         }
     }
 
-    const weaponType = getWeaponByName(weapon.name);
     const effectType = (weaponType && weaponType.effect) || 'whip';
     const effectDuration = (weaponType && weaponType.effectDuration) || 30;
     effects.push(new Effect(player.x, player.y, effectType, weapon.range, player.facingRight, effectDuration));
