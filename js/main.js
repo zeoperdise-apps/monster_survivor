@@ -1181,8 +1181,6 @@ function debugRecruitNpc(jobId) {
 
 // Shows a 3-job recruitment choice when the player visits a village.
 function openNpcSelectModal() {
-    isPaused = true;
-
     const jobChoices = [];
     const pool = [...npcJobTypes];
     for (let i = 0; i < 3 && pool.length > 0; i++) {
@@ -1190,6 +1188,16 @@ function openNpcSelectModal() {
         jobChoices.push(pool[randomIndex]);
         pool.splice(randomIndex, 1);
     }
+
+    // Auto-levelup also covers village recruitment: skip the modal and pick at random.
+    if (autoLevelUp) {
+        const chosen = jobChoices[Math.floor(Math.random() * jobChoices.length)];
+        player.npcs.push(createNpc(chosen.id, player.x, player.y));
+        showToast(`村人（自動選択）: ${chosen.name}を仲間にした`);
+        return;
+    }
+
+    isPaused = true;
 
     const modal = document.getElementById('npc-select-modal');
     modal.innerHTML = `

@@ -33,7 +33,7 @@ function createFortress(x, y) {
 function initStructures(originX, originY) {
     for (let i = 0; i < 3; i++) {
         const angle = Math.random() * Math.PI * 2;
-        const dist = 600 + Math.random() * 600;
+        const dist = 6000 + Math.random() * 6000;
         villages.push(createVillage(originX + Math.cos(angle) * dist, originY + Math.sin(angle) * dist));
     }
     for (let i = 0; i < 2; i++) {
