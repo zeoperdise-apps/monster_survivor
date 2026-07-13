@@ -688,15 +688,12 @@ function findNearestEnemyInRange(range) {
 }
 
 // 近接武器はプレイヤーの向いている方向へ振り、その側の射程内にいる
-// すべての敵にダメージを与える。
-const SLASH_HIT_SPREAD = Math.PI / 2; // 剣の斬撃エフェクト（'slash'）と同じ90度の扇形
-
+// すべての敵にダメージを与える。判定角度は武器ごとのhitSpread（未設定なら
+// 従来通り前方半円＝180度）に従う。
 function fireMeleeWeapon(weapon, damage) {
     const weaponType = getWeaponByName(weapon.name);
     const centerAngle = player.facingRight ? 0 : Math.PI;
-    // 剣は斬撃エフェクトと同じ90度の扇形に当たり判定を絞る。
-    // それ以外の近接武器は従来通り前方半円（180度）で判定する。
-    const hitSpread = (weaponType && weaponType.effect === 'slash') ? SLASH_HIT_SPREAD : null;
+    const hitSpread = (weaponType && weaponType.hitSpread) || null;
 
     const isInMeleeArc = (dx, dy, dist) => {
         if (dist > weapon.range) return false;

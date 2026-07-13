@@ -8,7 +8,8 @@ const weaponTypes = [
         range: 135,
         maxLevel: 8,
         img: "img/whip.png",
-        description: "シンプルな鞭攻撃"
+        description: "シンプルな鞭攻撃",
+        hitSpread: Math.PI * 2 / 3 // 120度: 横に広く薙ぎ払うが全周は殴れない
     },
     {
         name: "剣",
@@ -20,12 +21,13 @@ const weaponTypes = [
         img: "img/sword.png",
         description: "鋭い剣の斬撃",
         effect: "slash",
-        effectDuration: 10
+        effectDuration: 10,
+        hitSpread: Math.PI / 2 // 90度: 斬撃エフェクトと同じ扇形
     },
     {
         name: "弓",
         type: "ranged",
-        damage: 20,
+        damage: 24,
         cooldown: 90,
         range: 300,
         maxLevel: 8,
@@ -49,7 +51,7 @@ const weaponTypes = [
     {
         name: "斧",
         type: "thrown",
-        damage: 30,
+        damage: 34,
         cooldown: 100,
         range: 200,
         maxLevel: 8,
@@ -65,7 +67,8 @@ const weaponTypes = [
         maxLevel: 8,
         img: "img/spear.png",
         description: "向いている方向への突き攻撃",
-        effect: "thrust"
+        effect: "thrust",
+        hitSpread: Math.PI / 4 // 45度: まっすぐ突く攻撃なので狭い範囲のみ
     },
     {
         name: "ブーメラン",
