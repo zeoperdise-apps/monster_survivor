@@ -15,7 +15,6 @@ let currentPlayerImg = playerImg1;
 
 const BASE_SPEED = 3;
 const BASE_MAX_HP = 100;
-const ENEMY_CONTACT_DAMAGE = 5;
 const INVULNERABILITY_FRAMES = 30; // 0.5s of i-frames at 60fps after taking a hit
 
 const player = {
@@ -745,7 +744,7 @@ function handlePlayerDamage() {
     for (const e of enemies) {
         const dist = Math.hypot(player.x - e.x, player.y - e.y);
         if (dist < player.radius + e.radius) {
-            const dmg = getIncomingDamage(ENEMY_CONTACT_DAMAGE);
+            const dmg = getIncomingDamage(e.damage);
             player.hp -= dmg;
             player.invulnerableUntil = frameCount + INVULNERABILITY_FRAMES;
             effects.push(new Effect(player.x, player.y, 'hit'));
@@ -1456,6 +1455,7 @@ function createEnemy(selectedType, x, y) {
         speed: selectedType.speed,
         hp: selectedType.hp,
         maxHp: selectedType.hp,
+        damage: selectedType.damage,
         name: selectedType.name,
         img: null, // Will be loaded below
         facingRight: true, // Track direction for flipping image

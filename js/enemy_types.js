@@ -1,10 +1,11 @@
 // Enemy type definitions with different behaviors
 const enemyTypes = [
-    { 
-        color: '#f44', 
-        speed: 1, 
+    {
+        color: '#f44',
+        speed: 1,
         hp: 30,
         size: 30,
+        damage: 5,
         img: 'img/Goblin.png',
         name: "ゴブリン"
     },
@@ -13,6 +14,7 @@ const enemyTypes = [
         speed: 0.8,
         hp: 45,
         size: 45,
+        damage: 8,
         img: 'img/Ogre.png',
         name: "オーガ"
     },
@@ -21,6 +23,7 @@ const enemyTypes = [
         speed: 1.5,
         hp: 24,
         size: 27,
+        damage: 6,
         img: 'img/Skeleton.png',
         name: "スケルトン"
     },
@@ -29,6 +32,7 @@ const enemyTypes = [
         speed: 0.6,
         hp: 60,
         size: 54,
+        damage: 10,
         img: 'img/Troll.png',
         name: "トロール"
     },
@@ -37,6 +41,7 @@ const enemyTypes = [
         speed: 1.2,
         hp: 18,
         size: 21,
+        damage: 4,
         img: 'img/Ghost.png',
         name: "ゴースト"
     },
@@ -45,6 +50,7 @@ const enemyTypes = [
         speed: 0.9,
         hp: 36,
         size: 27,
+        damage: 7,
         img: 'img/Wizard.png',
         name: "ウィザード"
     },
@@ -53,6 +59,7 @@ const enemyTypes = [
         speed: 1.3,
         hp: 27,
         size: 36,
+        damage: 9,
         img: 'img/Demon.png',
         name: "デーモン"
     },
@@ -61,6 +68,7 @@ const enemyTypes = [
         speed: 0.7,
         hp: 54,
         size: 66,
+        damage: 14,
         img: 'img/Giant.png',
         name: "ジャイアント"
     },
@@ -69,6 +77,7 @@ const enemyTypes = [
         speed: 1.1,
         hp: 21,
         size: 21,
+        damage: 6,
         img: 'img/Shade.png',
         name: "シェード"
     },
@@ -77,6 +86,7 @@ const enemyTypes = [
         speed: 0.5,
         hp: 75,
         size: 81,
+        damage: 20,
         img: 'img/Dragon.png',
         name: "ドラゴン"
     }

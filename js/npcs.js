@@ -218,7 +218,7 @@ function updateNpc(npc) {
         for (const e of enemies) {
             const dist = Math.hypot(npc.x - e.x, npc.y - e.y);
             if (dist < npc.radius + e.radius) {
-                npc.hp -= ENEMY_CONTACT_DAMAGE;
+                npc.hp -= e.damage;
                 npc.invulnerableUntil = frameCount + INVULNERABILITY_FRAMES;
                 effects.push(new Effect(npc.x, npc.y, 'hit'));
                 break;
