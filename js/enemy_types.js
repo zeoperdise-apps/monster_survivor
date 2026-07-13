@@ -3,7 +3,9 @@
 // means "no upper bound"). Weaker early enemies phase out at higher levels;
 // late-game threats stay in the pool forever once unlocked. xp is scaled to
 // each enemy's overall strength (hp + damage), so tougher monsters are worth
-// more experience.
+// more experience. hp increases gradually (roughly exponentially) following
+// unlock order, from Goblin (30) up to Dragon (500), rather than a flat
+// multiplier applied to the old per-type values.
 const enemyTypes = [
     {
         color: '#f44',
@@ -20,7 +22,7 @@ const enemyTypes = [
     {
         color: '#4f4',
         speed: 0.8,
-        hp: 300,
+        hp: 56,
         size: 45,
         damage: 24,
         xp: 23,
@@ -32,7 +34,7 @@ const enemyTypes = [
     {
         color: '#44f',
         speed: 1.5,
-        hp: 160,
+        hp: 41,
         size: 27,
         damage: 18,
         xp: 15,
@@ -44,7 +46,7 @@ const enemyTypes = [
     {
         color: '#ff4',
         speed: 0.6,
-        hp: 400,
+        hp: 77,
         size: 54,
         damage: 30,
         xp: 30,
@@ -56,7 +58,7 @@ const enemyTypes = [
     {
         color: '#f4f',
         speed: 1.2,
-        hp: 120,
+        hp: 105,
         size: 21,
         damage: 12,
         xp: 11,
@@ -68,7 +70,7 @@ const enemyTypes = [
     {
         color: '#4ff',
         speed: 0.9,
-        hp: 240,
+        hp: 143,
         size: 27,
         damage: 21,
         xp: 20,
@@ -87,7 +89,7 @@ const enemyTypes = [
     {
         color: '#f84',
         speed: 1.3,
-        hp: 180,
+        hp: 196,
         size: 36,
         damage: 27,
         xp: 20,
@@ -98,7 +100,7 @@ const enemyTypes = [
     {
         color: '#8f4',
         speed: 0.7,
-        hp: 360,
+        hp: 268,
         size: 66,
         damage: 42,
         xp: 35,
@@ -109,7 +111,7 @@ const enemyTypes = [
     {
         color: '#48f',
         speed: 1.1,
-        hp: 140,
+        hp: 366,
         size: 21,
         damage: 18,
         xp: 14,
