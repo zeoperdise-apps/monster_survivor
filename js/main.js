@@ -1470,8 +1470,15 @@ function createEnemy(selectedType, x, y) {
                 this.x += (dx / dist) * this.speed;
                 this.y += (dy / dist) * this.speed;
 
-                // Update facing direction based on movement
-                this.facingRight = dx > 0;
+                // Update facing direction based on movement, with a dead
+                // zone so it doesn't flicker when dx hovers near zero
+                // (e.g. several enemies overlapping the same target).
+                const FACING_DEADZONE = 5;
+                if (dx > FACING_DEADZONE) {
+                    this.facingRight = true;
+                } else if (dx < -FACING_DEADZONE) {
+                    this.facingRight = false;
+                }
             }
         },
 
