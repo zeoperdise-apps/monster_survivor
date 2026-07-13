@@ -139,17 +139,31 @@ function destroyObstacle(o) {
     }
 }
 
-// 固い衝突判定: プレイヤーが重なった障害物から押し出す
-function resolvePlayerObstacleCollisions() {
+// 固い衝突判定: 指定したエンティティ（x, y, radiusを持つオブジェクト）を
+// 重なっている障害物から押し出す
+function pushEntityOutOfObstacles(entity) {
     for (const o of obstacles) {
-        const dx = player.x - o.x;
-        const dy = player.y - o.y;
+        const dx = entity.x - o.x;
+        const dy = entity.y - o.y;
         const dist = Math.hypot(dx, dy);
-        const minDist = player.radius + o.radius;
+        const minDist = entity.radius + o.radius;
         if (dist > 0 && dist < minDist) {
             const overlap = minDist - dist;
-            player.x += (dx / dist) * overlap;
-            player.y += (dy / dist) * overlap;
+            entity.x += (dx / dist) * overlap;
+            entity.y += (dy / dist) * overlap;
         }
+    }
+}
+
+// 固い衝突判定: プレイヤーが重なった障害物から押し出す
+function resolvePlayerObstacleCollisions() {
+    pushEntityOutOfObstacles(player);
+}
+
+// 固い衝突判定: 敵が重なった障害物から押し出す（敵も障害物を押しのけて
+// 通り抜けることはできない）
+function resolveEnemyObstacleCollisions() {
+    for (const e of enemies) {
+        pushEntityOutOfObstacles(e);
     }
 }

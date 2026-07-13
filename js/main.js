@@ -1570,6 +1570,9 @@ function stepGame() {
     // カメラオフセットを適用して敵を更新・描画する
     enemies.forEach(e => {
         e.update();
+    });
+    resolveEnemyObstacleCollisions();
+    enemies.forEach(e => {
         e.draw();
     });
 
