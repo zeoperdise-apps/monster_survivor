@@ -407,56 +407,50 @@ class Effect {
             ctx.fillStyle = `rgba(255, 100, 0, ${alpha})`;
             ctx.fill();
         } else if (this.type === 'whip') {
-            // Whip effect with more pronounced swinging motion visualization
+            // Whip crack: a tapered, wavy strip that snaps out quickly and
+            // fades, with a bright flash at the tip when fully extended.
             const alpha = this.life / this.maxLife;
-            const range = this.range || 135; // Use the attacking weapon's range
-            const swingProgress = 1 - (this.life / this.maxLife); // Progress of the swing motion
+            const range = this.range || 135;
+            const progress = 1 - (this.life / this.maxLife); // 0 -> 1 over the effect's life
+            const extend = Math.min(1, progress * 2.5); // snaps out fast, then holds while fading
+            const length = range * extend;
+            const dir = this.facingRight ? 1 : -1;
 
-            // Draw the whip effect at player's position with direction and swinging motion
             const startX = player.x - cameraX;
             const startY = player.y - cameraY;
 
-            // Create a more pronounced whip-like arc effect for better visual representation of swinging motion
-            ctx.strokeStyle = `rgba(139, 69, 19, ${alpha * 0.9})`; // SaddleBrown color for whip
-            ctx.lineWidth = 15; // Much thicker line for better visibility
-            ctx.beginPath();
+            const segments = 12;
+            const waveAmount = 16 * (1 - extend * 0.6); // the wave settles down as the whip extends
+            const topPoints = [];
+            const bottomPoints = [];
 
-            if (player.facingRight) {
-                // Whip swinging to the right with arc motion (more whip-like)
-                // Create a more dramatic swing curve by varying the control point based on progress
-                const controlX = startX + range * 0.6 * swingProgress;     // Control point X (middle of range, increases with swing progress)
-                const controlY = startY - range * 0.3 * (1 - swingProgress); // Control point Y (upward curve, decreases with swing progress)
-                ctx.moveTo(startX, startY);
-                ctx.quadraticCurveTo(controlX, controlY, startX + range * 0.8, startY - range * 0.1);
-            } else {
-                // Whip swinging to the left with arc motion (more whip-like)
-                // Create a more dramatic swing curve by varying the control point based on progress
-                const controlX = startX - range * 0.6 * swingProgress;     // Control point X (middle of range, increases with swing progress)
-                const controlY = startY - range * 0.3 * (1 - swingProgress); // Control point Y (upward curve, decreases with swing progress)
-                ctx.moveTo(startX, startY);
-                ctx.quadraticCurveTo(controlX, controlY, startX - range * 0.8, startY - range * 0.1);
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                const segX = startX + dir * length * t;
+                const wave = Math.sin(t * Math.PI * 2.2 + progress * 8) * waveAmount * (1 - t * 0.7);
+                const segY = startY - length * 0.12 * t + wave;
+                const halfWidth = (10 * (1 - t) + 1.5) / 2;
+                topPoints.push({ x: segX, y: segY - halfWidth });
+                bottomPoints.push({ x: segX, y: segY + halfWidth });
             }
-            ctx.stroke();
 
-            // Add a secondary line to make it look more like a whip with multiple strands
-            ctx.strokeStyle = `rgba(139, 69, 19, ${alpha * 0.7})`;
-            ctx.lineWidth = 8;
             ctx.beginPath();
+            ctx.moveTo(topPoints[0].x, topPoints[0].y);
+            for (const p of topPoints) ctx.lineTo(p.x, p.y);
+            for (let i = bottomPoints.length - 1; i >= 0; i--) ctx.lineTo(bottomPoints[i].x, bottomPoints[i].y);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(139, 90, 43, ${alpha})`;
+            ctx.fill();
 
-            if (player.facingRight) {
-                // Secondary whip line with different curve for strand effect
-                const controlX = startX + range * 0.4 * swingProgress;     // Control point X (middle of range, increases with swing progress)
-                const controlY = startY - range * 0.2 * (1 - swingProgress); // Control point Y (upward curve, decreases with swing progress)
-                ctx.moveTo(startX, startY);
-                ctx.quadraticCurveTo(controlX, controlY, startX + range * 0.6, startY - range * 0.05);
-            } else {
-                // Secondary whip line with different curve for strand effect
-                const controlX = startX - range * 0.4 * swingProgress;     // Control point X (middle of range, increases with swing progress)
-                const controlY = startY - range * 0.2 * (1 - swingProgress); // Control point Y (upward curve, decreases with swing progress)
-                ctx.moveTo(startX, startY);
-                ctx.quadraticCurveTo(controlX, controlY, startX - range * 0.6, startY - range * 0.05);
+            // Crack flash at the tip once the whip is nearly fully extended
+            if (extend > 0.75) {
+                const tip = topPoints[topPoints.length - 1];
+                const flashAlpha = alpha * ((extend - 0.75) / 0.25);
+                ctx.beginPath();
+                ctx.arc(tip.x, tip.y + 5, 6, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 240, 200, ${flashAlpha})`;
+                ctx.fill();
             }
-            ctx.stroke();
         } else if (this.type === 'slash') {
             // Sword slash - a fan-shaped sweep in the facing direction
             const alpha = this.life / this.maxLife;
