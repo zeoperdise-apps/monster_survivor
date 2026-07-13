@@ -1216,7 +1216,7 @@ function updateUI() {
             <div>攻撃力: ${100 + player.bonusDamage}%</div>
             <div>移動速度: ${100 + player.bonusSpeed}%</div>
             <div>射撃速度: ${100 + player.bonusFireRate}%</div>
-            <div>最大HP: ${100 + player.bonusMaxHp}%</div>
+            <div>最大HP: ${Math.round(player.maxHp)}</div>
             <div>防御力: ${100 + player.bonusDefense}%</div>
         `;
     }
