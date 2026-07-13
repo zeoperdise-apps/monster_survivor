@@ -190,6 +190,7 @@ function performNpcAttack(npc, target) {
             gems.push(new Gem(target.x, target.y));
             const idx = enemies.indexOf(target);
             if (idx !== -1) enemies.splice(idx, 1);
+            addBattleLog(`${npc.name}が${target.name}を倒した！`);
         }
         return true;
     }

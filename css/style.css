@@ -137,3 +137,27 @@ canvas {
 .debug-btn:hover {
     background: #044;
 }
+
+#battle-log {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    width: 380px;
+    max-height: 150px;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.55);
+    border: 1px solid #666;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 1.5;
+    pointer-events: none;
+    z-index: 40;
+    display: flex;
+    flex-direction: column;
+}
+
+#battle-log div {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

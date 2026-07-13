@@ -540,6 +540,7 @@ function fireMeleeWeapon(weapon, damage) {
             if (e.hp <= 0) {
                 gems.push(new Gem(e.x, e.y));
                 enemies.splice(j, 1);
+                addBattleLog(`${weapon.name}で${e.name}を倒した！`);
             }
         }
     }
@@ -645,6 +646,7 @@ function handleCombat() {
                             if (e2.hp <= 0) {
                                 gems.push(new Gem(e2.x, e2.y));
                                 enemies.splice(k, 1);
+                                addBattleLog(`${e2.name}を倒した！`);
                             }
                         }
                     }
@@ -654,6 +656,7 @@ function handleCombat() {
                     if (e.hp <= 0) {
                         gems.push(new Gem(e.x, e.y));
                         enemies.splice(j, 1);
+                        addBattleLog(`${e.name}を倒した！`);
                     }
                 }
 
@@ -671,9 +674,11 @@ function handlePlayerDamage() {
     for (const e of enemies) {
         const dist = Math.hypot(player.x - e.x, player.y - e.y);
         if (dist < player.radius + e.radius) {
-            player.hp -= getIncomingDamage(ENEMY_CONTACT_DAMAGE);
+            const dmg = getIncomingDamage(ENEMY_CONTACT_DAMAGE);
+            player.hp -= dmg;
             player.invulnerableUntil = frameCount + INVULNERABILITY_FRAMES;
             effects.push(new Effect(player.x, player.y, 'hit'));
+            addBattleLog(`${e.name}の攻撃を受けた！（-${Math.round(dmg)} HP）`);
 
             if (player.hp <= 0) {
                 player.hp = 0;
@@ -785,6 +790,7 @@ function levelUp() {
     player.level++;
     player.xp = 0; // Reset XP to 0 after level up
     player.nextXp = Math.floor(player.nextXp * 1.2);
+    addBattleLog(`レベルアップ！Lv.${player.level}`);
 
     // Create a combined list of all possible upgrades (weapons and accessories)
     const upgradeOptions = [];
@@ -1023,6 +1029,24 @@ function showToast(message) {
     toastTimeout = setTimeout(() => {
         toast.style.display = 'none';
     }, 3000);
+
+    addBattleLog(message);
+}
+
+// Persistent scrolling battle log shown at the bottom of the screen.
+const BATTLE_LOG_MAX_LINES = 8;
+const battleLog = [];
+
+function addBattleLog(message) {
+    battleLog.push(message);
+    if (battleLog.length > BATTLE_LOG_MAX_LINES) {
+        battleLog.shift();
+    }
+
+    const logElement = document.getElementById('battle-log');
+    if (logElement) {
+        logElement.innerHTML = battleLog.map(line => `<div>${line}</div>`).join('');
+    }
 }
 
 // Builds (and rebuilds, e.g. after toggling invincibility) the debug panel's contents.
@@ -1134,6 +1158,7 @@ function gameOver() {
     isGameOver = true;
     document.getElementById('game-over').style.display = 'block';
     document.getElementById('final-time').innerText = document.getElementById('time-val').innerText;
+    addBattleLog('力尽きた……ゲームオーバー');
 }
 
 function updateUI() {
