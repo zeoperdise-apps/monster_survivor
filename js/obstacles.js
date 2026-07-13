@@ -6,8 +6,8 @@
 const OBSTACLE_CELL_SIZE = 300;
 const OBSTACLE_SPAWN_CHANCE = 0.35;
 const OBSTACLE_SAFE_ZONE_RADIUS = 250; // keep the player's starting spot clear
-const GOLD_DROP_CHANCE = 0.25;
-const MEAT_DROP_CHANCE = 0.15;
+const GOLD_DROP_CHANCE = 0.01;
+const MEAT_DROP_CHANCE = 0.05;
 const MEAT_HEAL_RATIO = 0.3; // heals 30% of max HP
 
 const obstacleTypes = [
