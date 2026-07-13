@@ -1150,15 +1150,17 @@ function levelUp() {
     while (upgradeOptions.length < 3) {
         const allWeapons = getAvailableWeapons(player.level).filter(w => !isWeaponMaxed(w));
         const candidatePool = atMaxWeapons ? allWeapons.filter(w => hasWeapon(player, w.name)) : allWeapons;
-        if (candidatePool.length === 0) break; // 穴埋めに使えるものがもうない
+        // 既に選択肢に入っている武器を除いた、本当に追加できるものだけを候補にする。
+        // これをしないと、候補が1つだけかつ既に選択肢に含まれている場合に
+        // 何も追加されないまま無限ループしてしまう。
+        const newCandidates = candidatePool.filter(w => !upgradeOptions.some(option => option.type === 'weapon' && option.data.name === w.name));
+        if (newCandidates.length === 0) break; // 穴埋めに使えるものがもうない
 
-        const randomWeapon = candidatePool[Math.floor(Math.random() * candidatePool.length)];
-        if (!upgradeOptions.some(option => option.type === 'weapon' && option.data.name === randomWeapon.name)) {
-            upgradeOptions.push({
-                type: 'weapon',
-                data: randomWeapon
-            });
-        }
+        const randomWeapon = newCandidates[Math.floor(Math.random() * newCandidates.length)];
+        upgradeOptions.push({
+            type: 'weapon',
+            data: randomWeapon
+        });
     }
 
     // 未定義の武器・アクセサリーが紛れ込んでいないか確認する
