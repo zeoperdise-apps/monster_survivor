@@ -78,7 +78,7 @@ const effects = [];
 let frameCount = 0;
 let isPaused = false;
 let isGameOver = false;
-let startTime = Date.now();
+const ASSUMED_FPS = 60; // ゲーム内時間の換算に使う基準フレームレート
 let cameraX = 0;
 let cameraY = 0;
 let autoBattle = false;
@@ -1477,7 +1477,9 @@ function updateUI() {
         autoBattleInfoElement.innerText = parts.join(' / ');
     }
 
-    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    // ゲームスピードが変化しても連動するよう、実時間ではなくframeCount
+    // （ゲームスピードに応じて進む回数が変わる）から経過時間を換算する。
+    const elapsed = Math.floor(frameCount / ASSUMED_FPS);
     const mins = Math.floor(elapsed / 60);
     const secs = elapsed % 60;
     document.getElementById('time-val').innerText = `${mins}:${secs.toString().padStart(2, '0')}`;
