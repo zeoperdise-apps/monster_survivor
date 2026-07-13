@@ -158,8 +158,6 @@ canvas {
     line-height: 1.5;
     pointer-events: auto;
     z-index: 40;
-    display: flex;
-    flex-direction: column;
 }
 
 #battle-log div {
