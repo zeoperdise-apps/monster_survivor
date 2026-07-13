@@ -35,6 +35,13 @@ const accessoryTypes = [
         effects: [{ type: "bonusDefense", value: 10 }],
         img: "img/guardian_amulet.png",
         maxLevel: 5
+    },
+    {
+        name: "引き寄せのオーブ",
+        description: "アイテムの収集範囲が上昇",
+        effects: [{ type: "bonusPickupRange", value: 30 }],
+        img: "img/orb_of_attraction.png",
+        maxLevel: 5
     }
 ];
 

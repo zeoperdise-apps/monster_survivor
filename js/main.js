@@ -37,6 +37,7 @@ const player = {
     bonusSpeed: 0,
     bonusMaxHp: 0,
     bonusDefense: 0,
+    bonusPickupRange: 0,
     invulnerableUntil: 0,
     npcs: []
 };
@@ -63,6 +64,10 @@ function getEffectiveCooldown(weapon) {
 
 function getIncomingDamage(baseDamage) {
     return baseDamage / (1 + player.bonusDefense / 100);
+}
+
+function getPickupRange() {
+    return (player.radius + 20) * (1 + player.bonusPickupRange / 100);
 }
 
 const enemies = [];
@@ -805,7 +810,7 @@ function updatePlayer() {
     for (let i = gems.length - 1; i >= 0; i--) {
         const g = gems[i];
         const dist = Math.sqrt((player.x - g.x)**2 + (player.y - g.y)**2);
-        if (dist < player.radius + 20) {
+        if (dist < getPickupRange()) {
             player.xp += g.xp;
             gems.splice(i, 1);
             if (player.xp >= player.nextXp) levelUp();
@@ -1218,6 +1223,7 @@ function updateUI() {
             <div>射撃速度: ${100 + player.bonusFireRate}%</div>
             <div>最大HP: ${Math.round(player.maxHp)}</div>
             <div>防御力: ${100 + player.bonusDefense}%</div>
+            <div>収集範囲: ${100 + player.bonusPickupRange}%</div>
         `;
     }
 
