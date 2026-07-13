@@ -1018,8 +1018,8 @@ const RANDOM_UPGRADE_TYPES = [
     },
     {
         id: 'fireRate',
-        name: '射撃速度アップ',
-        description: 'すべての武器の射撃速度が15%上昇',
+        name: '攻撃速度アップ',
+        description: 'すべての武器の攻撃速度が15%上昇',
         apply: () => {
             player.bonusFireRate += 15;
         }
@@ -1254,7 +1254,7 @@ function updateUI() {
         statBonusElement.innerHTML = `
             <div>攻撃力: ${100 + player.bonusDamage}%</div>
             <div>移動速度: ${100 + player.bonusSpeed}%</div>
-            <div>射撃速度: ${100 + player.bonusFireRate}%</div>
+            <div>攻撃速度: ${100 + player.bonusFireRate}%</div>
             <div>最大HP: ${Math.round(player.maxHp)}</div>
             <div>防御力: ${100 + player.bonusDefense}%</div>
             <div>収集範囲: ${100 + player.bonusPickupRange}%</div>

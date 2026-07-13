@@ -24,7 +24,7 @@ const accessoryTypes = [
     },
     {
         name: "疾風の手甲",
-        description: "射撃速度が上昇",
+        description: "攻撃速度が上昇",
         effects: [{ type: "bonusFireRate", value: 15 }],
         img: "img/gale_gauntlet.png",
         maxLevel: 5
