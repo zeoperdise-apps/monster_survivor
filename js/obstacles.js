@@ -106,16 +106,6 @@ function drawObstacle(o) {
         ctx.fill();
         ctx.closePath();
     }
-
-    const barWidth = o.radius * 2;
-    const barHeight = 4;
-    const barX = screenX - barWidth / 2;
-    const barY = screenY - o.radius - 10;
-    ctx.fillStyle = '#333';
-    ctx.fillRect(barX, barY, barWidth, barHeight);
-    const hpRatio = Math.max(0, o.hp / o.maxHp);
-    ctx.fillStyle = hpRatio > 0.5 ? '#0f0' : hpRatio > 0.25 ? '#ff0' : '#f00';
-    ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
 }
 
 // Marks the obstacle's cell as permanently cleared, removes it, and rolls
