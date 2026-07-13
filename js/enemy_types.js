@@ -75,7 +75,14 @@ const enemyTypes = [
         img: 'img/Wizard.png',
         name: "ウィザード",
         minLevel: 8,
-        maxLevel: 18
+        maxLevel: 18,
+        attackType: 'ranged',
+        rangedDamage: 12,
+        rangedCooldown: 90,
+        rangedRange: 400,
+        projectileSpeed: 5,
+        projectileRadius: 6,
+        projectileColor: '#0ff'
     },
     {
         color: '#f84',
@@ -119,7 +126,14 @@ const enemyTypes = [
         xp: 50,
         img: 'img/Dragon.png',
         name: "ドラゴン",
-        minLevel: 18
+        minLevel: 18,
+        attackType: 'ranged',
+        rangedDamage: 25,
+        rangedCooldown: 120,
+        rangedRange: 500,
+        projectileSpeed: 6,
+        projectileRadius: 14,
+        projectileColor: '#f60'
     }
 ];
 

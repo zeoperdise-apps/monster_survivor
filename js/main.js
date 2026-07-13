@@ -71,6 +71,7 @@ function getPickupRange() {
 
 const enemies = [];
 const projectiles = [];
+const enemyBullets = [];
 const gems = [];
 const keys = {};
 const effects = [];
@@ -533,6 +534,69 @@ class Gem {
         ctx.fillStyle = this.color;
         ctx.fill();
         ctx.closePath();
+    }
+}
+
+// A projectile fired by a ranged enemy (e.g. Wizard's bolt, Dragon's breath) at the player.
+class EnemyProjectile {
+    constructor(x, y, targetX, targetY, damage, speed, radius, color, sourceName) {
+        this.x = x;
+        this.y = y;
+        this.damage = damage;
+        this.radius = radius;
+        this.color = color;
+        this.sourceName = sourceName;
+
+        const dx = targetX - x;
+        const dy = targetY - y;
+        const dist = Math.hypot(dx, dy) || 1;
+        this.vx = (dx / dist) * speed;
+        this.vy = (dy / dist) * speed;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+    }
+
+    draw() {
+        ctx.beginPath();
+        ctx.arc(this.x - cameraX, this.y - cameraY, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.fill();
+        ctx.closePath();
+    }
+}
+
+// Updates enemy projectiles and applies damage/game over if one hits the player.
+function updateEnemyBullets() {
+    for (let i = enemyBullets.length - 1; i >= 0; i--) {
+        const b = enemyBullets[i];
+        b.update();
+
+        if (b.x < cameraX - 100 || b.x > cameraX + canvas.width + 100 ||
+            b.y < cameraY - 100 || b.y > cameraY + canvas.height + 100) {
+            enemyBullets.splice(i, 1);
+            continue;
+        }
+
+        const dist = Math.hypot(b.x - player.x, b.y - player.y);
+        if (dist < b.radius + player.radius) {
+            enemyBullets.splice(i, 1);
+
+            if (isGameOver || invincible || frameCount < player.invulnerableUntil) continue;
+
+            const dmg = getIncomingDamage(b.damage);
+            player.hp -= dmg;
+            player.invulnerableUntil = frameCount + INVULNERABILITY_FRAMES;
+            effects.push(new Effect(player.x, player.y, 'hit'));
+            addBattleLog(`${b.sourceName}の遠距離攻撃を受けた！（-${Math.round(dmg)} HP）`);
+
+            if (player.hp <= 0) {
+                player.hp = 0;
+                gameOver();
+            }
+        }
     }
 }
 
@@ -1399,6 +1463,10 @@ function gameLoop() {
     // Draw projectiles with camera offset
     projectiles.forEach(p => p.draw());
 
+    // Update and draw enemy ranged attacks
+    updateEnemyBullets();
+    enemyBullets.forEach(b => b.draw());
+
     // Spawn enemies
     if (frameCount % 100 === 0) { // Spawn enemy every 100 frames
         spawnEnemy();
@@ -1467,6 +1535,16 @@ function createEnemy(selectedType, x, y) {
         img: null, // Will be loaded below
         facingRight: true, // Track direction for flipping image
 
+        // Ranged-attack stats (only set for enemies with attackType 'ranged')
+        attackType: selectedType.attackType || 'melee',
+        rangedDamage: selectedType.rangedDamage,
+        rangedCooldown: selectedType.rangedCooldown,
+        rangedRange: selectedType.rangedRange,
+        projectileSpeed: selectedType.projectileSpeed,
+        projectileRadius: selectedType.projectileRadius,
+        projectileColor: selectedType.projectileColor,
+        lastRangedAttack: frameCount,
+
         update() {
             // Move towards player
             const dx = player.x - this.x;
@@ -1486,6 +1564,17 @@ function createEnemy(selectedType, x, y) {
                 } else if (dx < -FACING_DEADZONE) {
                     this.facingRight = false;
                 }
+            }
+
+            if (this.attackType === 'ranged' && dist <= this.rangedRange &&
+                frameCount - this.lastRangedAttack >= this.rangedCooldown) {
+                enemyBullets.push(new EnemyProjectile(
+                    this.x, this.y, player.x, player.y,
+                    this.rangedDamage, this.projectileSpeed, this.projectileRadius,
+                    this.projectileColor, this.name
+                ));
+                effects.push(new Effect(this.x, this.y, 'attack'));
+                this.lastRangedAttack = frameCount;
             }
         },
 
