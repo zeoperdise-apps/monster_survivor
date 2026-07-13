@@ -7,6 +7,8 @@ const OBSTACLE_CELL_SIZE = 300;
 const OBSTACLE_SPAWN_CHANCE = 0.35;
 const OBSTACLE_SAFE_ZONE_RADIUS = 250; // keep the player's starting spot clear
 const GOLD_DROP_CHANCE = 0.25;
+const MEAT_DROP_CHANCE = 0.15;
+const MEAT_HEAL_RATIO = 0.3; // heals 30% of max HP
 
 const obstacleTypes = [
     { name: "ツボ", hp: 20, radius: 20, img: "img/pot.png", color: '#c68a3c' },
@@ -109,7 +111,7 @@ function drawObstacle(o) {
 }
 
 // Marks the obstacle's cell as permanently cleared, removes it, and rolls
-// for a rare gold coin drop.
+// for rare gold coin and meat drops (both independent, either or both can happen).
 function destroyObstacle(o) {
     destroyedObstacleCells.add(cellKey(o.cx, o.cy));
     const idx = obstacles.indexOf(o);
@@ -117,10 +119,22 @@ function destroyObstacle(o) {
 
     effects.push(new Effect(o.x, o.y, 'hit'));
 
+    let gotDrop = false;
+
     if (Math.random() < GOLD_DROP_CHANCE) {
         goldCoins++;
         addBattleLog(`${o.name}を壊して金貨を手に入れた！（所持: ${goldCoins}枚）`);
-    } else {
+        gotDrop = true;
+    }
+
+    if (Math.random() < MEAT_DROP_CHANCE) {
+        const healAmount = player.maxHp * MEAT_HEAL_RATIO;
+        player.hp = Math.min(player.maxHp, player.hp + healAmount);
+        addBattleLog(`${o.name}から肉を手に入れて食べた！HPが${Math.round(healAmount)}回復した`);
+        gotDrop = true;
+    }
+
+    if (!gotDrop) {
         addBattleLog(`${o.name}を壊した`);
     }
 }
