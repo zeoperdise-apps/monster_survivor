@@ -8,75 +8,75 @@ const enemyTypes = [
         img: 'img/Goblin.png',
         name: "ゴブリン"
     },
-    { 
-        color: '#4f4', 
-        speed: 0.8, 
+    {
+        color: '#4f4',
+        speed: 0.8,
         hp: 45,
-        size: 36,
+        size: 45,
         img: 'img/Ogre.png',
         name: "オーガ"
     },
-    { 
-        color: '#44f', 
-        speed: 1.5, 
+    {
+        color: '#44f',
+        speed: 1.5,
         hp: 24,
-        size: 24,
+        size: 27,
         img: 'img/Skeleton.png',
         name: "スケルトン"
     },
-    { 
-        color: '#ff4', 
-        speed: 0.6, 
+    {
+        color: '#ff4',
+        speed: 0.6,
         hp: 60,
-        size: 44,
+        size: 54,
         img: 'img/Troll.png',
         name: "トロール"
     },
-    { 
-        color: '#f4f', 
-        speed: 1.2, 
+    {
+        color: '#f4f',
+        speed: 1.2,
         hp: 18,
-        size: 10,
+        size: 21,
         img: 'img/Ghost.png',
         name: "ゴースト"
     },
-    { 
-        color: '#4ff', 
-        speed: 0.9, 
+    {
+        color: '#4ff',
+        speed: 0.9,
         hp: 36,
-        size: 16,
+        size: 27,
         img: 'img/Wizard.png',
         name: "ウィザード"
     },
-    { 
-        color: '#f84', 
-        speed: 1.3, 
+    {
+        color: '#f84',
+        speed: 1.3,
         hp: 27,
-        size: 13,
+        size: 36,
         img: 'img/Demon.png',
         name: "デーモン"
     },
-    { 
-        color: '#8f4', 
-        speed: 0.7, 
+    {
+        color: '#8f4',
+        speed: 0.7,
         hp: 54,
-        size: 19,
+        size: 66,
         img: 'img/Giant.png',
         name: "ジャイアント"
     },
-    { 
-        color: '#48f', 
-        speed: 1.1, 
+    {
+        color: '#48f',
+        speed: 1.1,
         hp: 21,
-        size: 9,
+        size: 21,
         img: 'img/Shade.png',
         name: "シェード"
     },
-    { 
-        color: '#f48', 
-        speed: 0.5, 
+    {
+        color: '#f48',
+        speed: 0.5,
         hp: 75,
-        size: 27,
+        size: 81,
         img: 'img/Dragon.png',
         name: "ドラゴン"
     }

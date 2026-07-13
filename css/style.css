@@ -51,6 +51,12 @@ canvas {
     background: #666;
 }
 
+.upgrade-btn.selected {
+    background: #666;
+    border-color: #ffd700;
+    box-shadow: 0 0 6px #ffd700;
+}
+
 #game-over {
     position: absolute;
     top: 50%;
@@ -61,4 +67,73 @@ canvas {
     text-align: center;
     display: none;
     z-index: 100;
+}
+
+#npc-select-modal {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 20px;
+    border: 2px solid #ffd700;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 100;
+}
+
+#npc-info {
+    margin-top: 6px;
+}
+
+#toast-message {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px solid #ffd700;
+    color: #ffd700;
+    padding: 8px 16px;
+    pointer-events: none;
+    z-index: 50;
+    display: none;
+}
+
+#debug-menu {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 260px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.9);
+    border: 2px solid #0f0;
+    padding: 10px;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    z-index: 200;
+}
+
+#debug-menu h3 {
+    margin: 8px 0 2px;
+    color: #0f0;
+    font-size: 13px;
+}
+
+.debug-btn {
+    background: #222;
+    color: #0f0;
+    border: 1px solid #0f0;
+    padding: 4px 8px;
+    cursor: pointer;
+    pointer-events: auto;
+    font-size: 12px;
+    text-align: left;
+}
+
+.debug-btn:hover {
+    background: #044;
 }

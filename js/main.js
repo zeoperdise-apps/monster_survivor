@@ -21,7 +21,7 @@ const INVULNERABILITY_FRAMES = 30; // 0.5s of i-frames at 60fps after taking a h
 const player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    radius: 24, // Same size as the Skeleton enemy
+    radius: 30, // Same size as the Goblin enemy
     color: '#4af',
     speed: BASE_SPEED,
     hp: BASE_MAX_HP,
@@ -37,10 +37,12 @@ const player = {
     bonusSpeed: 0,
     bonusMaxHp: 0,
     bonusDefense: 0,
-    invulnerableUntil: 0
+    invulnerableUntil: 0,
+    npcs: []
 };
 
 initPlayerAccessories(player);
+initStructures(player.x, player.y);
 
 // Recomputes derived stats (speed, max HP) from the current bonus totals.
 function applyPlayerStats() {
@@ -74,6 +76,10 @@ let isGameOver = false;
 let startTime = Date.now();
 let cameraX = 0;
 let cameraY = 0;
+let autoBattle = false;
+let autoLevelUp = false;
+let debugMode = false;
+let invincible = false;
 
 // Background tile setup
 const tileSize = 100;
@@ -90,33 +96,224 @@ for (let y = -canvas.height; y < canvas.height * 2; y += tileSize) {
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
+// Auto-battle toggle: hands movement over to a simple AI (see runAutoBattleMovement).
+window.addEventListener('keydown', e => {
+    if (e.code === 'KeyB') {
+        autoBattle = !autoBattle;
+        showToast(autoBattle ? '自動戦闘: ON' : '自動戦闘: OFF');
+    }
+});
+
+// Auto-levelup toggle: skips the level-up modal and picks an option at random.
+window.addEventListener('keydown', e => {
+    if (e.code === 'KeyL') {
+        autoLevelUp = !autoLevelUp;
+        showToast(autoLevelUp ? '自動レベルアップ: ON' : '自動レベルアップ: OFF');
+    }
+});
+
+// Debug menu toggle: a cheat panel for testing (level up, heal, spawn things, etc).
+window.addEventListener('keydown', e => {
+    if (e.code === 'F8') {
+        e.preventDefault();
+        debugMode = !debugMode;
+        const menu = document.getElementById('debug-menu');
+        if (debugMode) {
+            buildDebugMenu();
+            menu.style.display = 'flex';
+        } else {
+            menu.style.display = 'none';
+        }
+    }
+});
+
+// Keyboard navigation for the level-up choice modal (arrow keys + Enter/Space)
+let upgradeButtons = [];
+let selectedUpgradeIndex = 0;
+
+function updateUpgradeSelection() {
+    upgradeButtons.forEach((btn, i) => {
+        btn.classList.toggle('selected', i === selectedUpgradeIndex);
+    });
+}
+
+window.addEventListener('keydown', e => {
+    const modal = document.getElementById('level-up-modal');
+    if (modal.style.display !== 'flex' || upgradeButtons.length === 0) return;
+
+    if (e.code === 'ArrowDown' || e.code === 'ArrowRight') {
+        e.preventDefault();
+        selectedUpgradeIndex = (selectedUpgradeIndex + 1) % upgradeButtons.length;
+        updateUpgradeSelection();
+    } else if (e.code === 'ArrowUp' || e.code === 'ArrowLeft') {
+        e.preventDefault();
+        selectedUpgradeIndex = (selectedUpgradeIndex - 1 + upgradeButtons.length) % upgradeButtons.length;
+        updateUpgradeSelection();
+    } else if (e.code === 'Enter' || e.code === 'Space') {
+        e.preventDefault();
+        upgradeButtons[selectedUpgradeIndex].click();
+    }
+});
+
 
 // Projectile Class
 class Projectile {
-    constructor(x, y, targetX, targetY, damage, splashRadius = 0, color = '#ff0') {
+    constructor(x, y, targetX, targetY, damage, splashRadius = 0, color = '#ff0', arc = false, blast = false, axe = false, arrow = false) {
         this.x = x;
         this.y = y;
-        this.radius = 5;
+        this.blast = blast;
+        this.axe = axe;
+        this.arrow = arrow;
+        this.rotation = 0;
+        this.radius = blast ? 9 : 5;
         this.color = color;
         this.damage = damage;
         this.speed = 7;
         this.splashRadius = splashRadius;
+        this.arc = arc;
 
         const dx = targetX - x;
         const dy = targetY - y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        this.vx = (dx / dist) * this.speed;
-        this.vy = (dy / dist) * this.speed;
+        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+        this.angle = Math.atan2(dy, dx);
+
+        if (arc) {
+            // Curve toward the target via a quadratic Bezier instead of a straight line.
+            this.startX = x;
+            this.startY = y;
+            this.endX = targetX;
+            this.endY = targetY;
+            const perpX = -dy / dist;
+            const perpY = dx / dist;
+            const curveAmount = dist * 0.4;
+            const side = Math.random() < 0.5 ? 1 : -1;
+            this.controlX = x + dx / 2 + perpX * curveAmount * side;
+            this.controlY = y + dy / 2 + perpY * curveAmount * side;
+            this.t = 0;
+            this.tStep = this.speed / dist;
+        } else {
+            this.vx = (dx / dist) * this.speed;
+            this.vy = (dy / dist) * this.speed;
+        }
     }
 
     update() {
-        this.x += this.vx;
-        this.y += this.vy;
+        if (this.axe) {
+            this.rotation += 0.35;
+        }
+
+        const prevX = this.x;
+        const prevY = this.y;
+
+        if (this.arc) {
+            this.t = Math.min(1, this.t + this.tStep);
+            const t = this.t;
+            const mt = 1 - t;
+            this.x = mt * mt * this.startX + 2 * mt * t * this.controlX + t * t * this.endX;
+            this.y = mt * mt * this.startY + 2 * mt * t * this.controlY + t * t * this.endY;
+        } else {
+            this.x += this.vx;
+            this.y += this.vy;
+        }
+
+        if (this.arrow) {
+            const dx = this.x - prevX;
+            const dy = this.y - prevY;
+            if (dx !== 0 || dy !== 0) {
+                this.angle = Math.atan2(dy, dx);
+            }
+        }
     }
 
     draw() {
-        ctx.beginPath();
+        if (this.arrow) {
+            // Arrow: a thin shaft with fletching at the back and a point at the front,
+            // oriented along the direction it's currently traveling.
+            const screenX = this.x - cameraX;
+            const screenY = this.y - cameraY;
+            ctx.save();
+            ctx.translate(screenX, screenY);
+            ctx.rotate(this.angle);
 
+            ctx.strokeStyle = '#8b5a2b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(6, 0);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(11, 0);
+            ctx.lineTo(3, -4);
+            ctx.lineTo(3, 4);
+            ctx.closePath();
+            ctx.fillStyle = '#ddd';
+            ctx.fill();
+
+            ctx.strokeStyle = '#d33';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-5, -3);
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(-5, 3);
+            ctx.stroke();
+
+            ctx.restore();
+            return;
+        }
+
+        if (this.axe) {
+            // Spinning axe silhouette: a short handle with a wedge-shaped blade.
+            const screenX = this.x - cameraX;
+            const screenY = this.y - cameraY;
+            ctx.save();
+            ctx.translate(screenX, screenY);
+            ctx.rotate(this.rotation);
+
+            ctx.strokeStyle = '#8b5a2b';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-10, 0);
+            ctx.lineTo(10, 0);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(4, 0);
+            ctx.lineTo(14, -9);
+            ctx.lineTo(14, 9);
+            ctx.closePath();
+            ctx.fillStyle = '#c8c8d2';
+            ctx.fill();
+
+            ctx.restore();
+            return;
+        }
+
+        if (this.blast) {
+            // Glowing blast: soft outer halo plus a bright core.
+            const screenX = this.x - cameraX;
+            const screenY = this.y - cameraY;
+            const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, this.radius * 2.5);
+            gradient.addColorStop(0, 'rgba(210, 140, 255, 0.9)');
+            gradient.addColorStop(0.5, 'rgba(160, 80, 255, 0.5)');
+            gradient.addColorStop(1, 'rgba(160, 80, 255, 0)');
+
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, this.radius * 2.5, 0, Math.PI * 2);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+            ctx.closePath();
+
+            ctx.beginPath();
+            ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = '#f0e6ff';
+            ctx.fill();
+            ctx.closePath();
+            return;
+        }
+
+        ctx.beginPath();
         ctx.arc(this.x - cameraX, this.y - cameraY, this.radius, 0, Math.PI * 2);
         ctx.fillStyle = this.color;
         ctx.fill();
@@ -126,13 +323,14 @@ class Projectile {
 
 // Effect Class
 class Effect {
-    constructor(x, y, type, range) {
+    constructor(x, y, type, range, facingRight, life = 30) {
         this.x = x;
         this.y = y;
-        this.type = type; // 'hit', 'attack' or 'whip'
+        this.type = type; // 'hit', 'attack', 'whip', 'slash' or 'thrust'
         this.range = range;
-        this.life = 30; // frames to live
-        this.maxLife = 30;
+        this.facingRight = facingRight;
+        this.life = life; // frames to live
+        this.maxLife = life;
         this.size = 0;
         this.maxSize = 20;
     }
@@ -214,6 +412,65 @@ class Effect {
                 ctx.quadraticCurveTo(controlX, controlY, startX - range * 0.6, startY - range * 0.05);
             }
             ctx.stroke();
+        } else if (this.type === 'slash') {
+            // Sword slash - a fan-shaped sweep in the facing direction
+            const alpha = this.life / this.maxLife;
+            const range = this.range || 100;
+            const progress = 1 - (this.life / this.maxLife); // 0 -> 1 over the effect's life
+
+            const originX = player.x - cameraX;
+            const originY = player.y - cameraY;
+            const centerAngle = this.facingRight ? 0 : Math.PI;
+            const spread = Math.PI / 2; // 90 degree fan
+            const startAngle = centerAngle - spread / 2;
+            const sweepAngle = startAngle + spread * Math.min(1, progress * 1.6);
+
+            // Filled fan showing the slashed area
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.arc(originX, originY, range, startAngle, sweepAngle);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(230, 230, 255, ${alpha * 0.35})`;
+            ctx.fill();
+
+            // Bright blade edge along the leading edge of the sweep
+            ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.arc(originX, originY, range, startAngle, sweepAngle);
+            ctx.stroke();
+        } else if (this.type === 'thrust') {
+            // Spear thrust - a quick jab straight out in the facing direction
+            const alpha = this.life / this.maxLife;
+            const range = this.range || 160;
+            const progress = 1 - (this.life / this.maxLife); // 0 -> 1 over the effect's life
+            const extend = Math.min(1, progress * 3); // reaches full length quickly, then holds while fading
+            const dir = this.facingRight ? 1 : -1;
+            const length = range * extend;
+
+            const originX = player.x - cameraX;
+            const originY = player.y - cameraY;
+            const tipX = originX + dir * length;
+            const tipY = originY;
+
+            // Shaft
+            ctx.strokeStyle = `rgba(150, 110, 70, ${alpha})`;
+            ctx.lineWidth = 5;
+            ctx.beginPath();
+            ctx.moveTo(originX, originY);
+            ctx.lineTo(tipX, tipY);
+            ctx.stroke();
+
+            // Spearhead
+            const headLength = 18;
+            const headWidth = 10;
+            ctx.beginPath();
+            ctx.moveTo(tipX, tipY);
+            ctx.lineTo(tipX - dir * headLength, tipY - headWidth / 2);
+            ctx.lineTo(tipX - dir * headLength, tipY + headWidth / 2);
+            ctx.closePath();
+            ctx.fillStyle = `rgba(225, 225, 235, ${alpha})`;
+            ctx.fill();
         }
 
         ctx.closePath();
@@ -275,7 +532,10 @@ function fireMeleeWeapon(weapon, damage) {
         }
     }
 
-    effects.push(new Effect(player.x, player.y, 'whip', weapon.range));
+    const weaponType = getWeaponByName(weapon.name);
+    const effectType = (weaponType && weaponType.effect) || 'whip';
+    const effectDuration = (weaponType && weaponType.effectDuration) || 30;
+    effects.push(new Effect(player.x, player.y, effectType, weapon.range, player.facingRight, effectDuration));
 }
 
 // Ranged weapons fire a single-target projectile at the nearest enemy in range.
@@ -283,18 +543,42 @@ function fireRangedWeapon(weapon, damage) {
     const target = findNearestEnemyInRange(weapon.range);
     if (!target) return false;
 
-    projectiles.push(new Projectile(player.x, player.y, target.x, target.y, damage, 0, '#ff0'));
+    const weaponType = getWeaponByName(weapon.name);
+    const isArc = !!(weaponType && weaponType.arc);
+    const isArrow = !!(weaponType && weaponType.projectileShape === 'arrow');
+    projectiles.push(new Projectile(player.x, player.y, target.x, target.y, damage, 0, '#ff0', isArc, false, false, isArrow));
     effects.push(new Effect(player.x, player.y, 'attack'));
     return true;
 }
 
 // Magic weapons fire a projectile that splashes to nearby enemies on impact.
 function fireMagicWeapon(weapon, damage) {
-    const target = findNearestEnemyInRange(weapon.range);
+    const weaponType = getWeaponByName(weapon.name);
+
+    // Unlimited-range weapons can target the nearest enemy anywhere on screen,
+    // regardless of distance. The player is always drawn at screen center, so
+    // half the screen's diagonal covers the entire visible viewport.
+    const searchRange = (weaponType && weaponType.unlimitedRange)
+        ? Math.hypot(canvas.width, canvas.height) / 2
+        : weapon.range;
+
+    const target = findNearestEnemyInRange(searchRange);
     if (!target) return false;
 
-    projectiles.push(new Projectile(player.x, player.y, target.x, target.y, damage, 60, '#a0f'));
+    const isBlast = !!(weaponType && weaponType.effect === 'blast');
+    projectiles.push(new Projectile(player.x, player.y, target.x, target.y, damage, 60, '#a0f', false, isBlast));
     effects.push(new Effect(player.x, player.y, 'attack'));
+    return true;
+}
+
+// Thrown weapons are hurled straight ahead in the facing direction (not
+// aimed at a specific enemy), spinning as they arc through the air.
+function fireThrownWeapon(weapon, damage) {
+    const dir = player.facingRight ? 1 : -1;
+    const targetX = player.x + dir * weapon.range;
+    const targetY = player.y;
+
+    projectiles.push(new Projectile(player.x, player.y, targetX, targetY, damage, 0, '#c68a3c', true, false, true));
     return true;
 }
 
@@ -313,6 +597,8 @@ function handleCombat() {
             fired = fireRangedWeapon(weapon, damage);
         } else if (weaponType.type === 'magic') {
             fired = fireMagicWeapon(weapon, damage);
+        } else if (weaponType.type === 'thrown') {
+            fired = fireThrownWeapon(weapon, damage);
         }
 
         if (fired) weapon.lastFire = frameCount;
@@ -323,9 +609,11 @@ function handleCombat() {
         const p = projectiles[i];
         p.update();
 
-        // Remove once it leaves the visible area around the player
+        // Remove once it leaves the visible area around the player, or (for
+        // arc shots) once it reaches the end of its curved flight path.
         if (p.x < cameraX - 50 || p.x > cameraX + canvas.width + 50 ||
-            p.y < cameraY - 50 || p.y > cameraY + canvas.height + 50) {
+            p.y < cameraY - 50 || p.y > cameraY + canvas.height + 50 ||
+            (p.arc && p.t >= 1)) {
             projectiles.splice(i, 1);
             continue;
         }
@@ -366,7 +654,7 @@ function handleCombat() {
 
 // Applies contact damage (and game over) when an enemy touches the player.
 function handlePlayerDamage() {
-    if (isGameOver || frameCount < player.invulnerableUntil) return;
+    if (isGameOver || invincible || frameCount < player.invulnerableUntil) return;
 
     for (const e of enemies) {
         const dist = Math.hypot(player.x - e.x, player.y - e.y);
@@ -384,21 +672,88 @@ function handlePlayerDamage() {
     }
 }
 
+// Auto-battle: simple AI movement used in place of manual controls when enabled.
+const AUTO_BATTLE_FLEE_HP_RATIO = 0.3;
+const AUTO_BATTLE_CHASE_RADIUS = 400;
+const AUTO_BATTLE_GEM_RADIUS = 500;
+const AUTO_BATTLE_STOP_DISTANCE = 50;
+
+function moveTowards(targetX, targetY) {
+    const dx = targetX - player.x;
+    const dy = targetY - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 1) return;
+    player.x += (dx / dist) * player.speed;
+    player.y += (dy / dist) * player.speed;
+    player.facingRight = dx > 0;
+}
+
+function runAutoBattleMovement() {
+    let nearestEnemy = null;
+    let nearestEnemyDist = Infinity;
+    for (const e of enemies) {
+        const dist = Math.hypot(e.x - player.x, e.y - player.y);
+        if (dist < nearestEnemyDist) {
+            nearestEnemy = e;
+            nearestEnemyDist = dist;
+        }
+    }
+
+    // Badly hurt with an enemy nearby: run straight away from it.
+    if (nearestEnemy && nearestEnemyDist < AUTO_BATTLE_CHASE_RADIUS &&
+        player.hp / player.maxHp < AUTO_BATTLE_FLEE_HP_RATIO) {
+        moveTowards(player.x + (player.x - nearestEnemy.x), player.y + (player.y - nearestEnemy.y));
+        return;
+    }
+
+    // Otherwise close the distance to the nearest enemy so weapons can reach it.
+    if (nearestEnemy && nearestEnemyDist < AUTO_BATTLE_CHASE_RADIUS) {
+        if (nearestEnemyDist > AUTO_BATTLE_STOP_DISTANCE) {
+            moveTowards(nearestEnemy.x, nearestEnemy.y);
+        } else {
+            player.facingRight = nearestEnemy.x > player.x;
+        }
+        return;
+    }
+
+    // No threats nearby: go pick up any leftover XP gems.
+    let nearestGem = null;
+    let nearestGemDist = Infinity;
+    for (const g of gems) {
+        const dist = Math.hypot(g.x - player.x, g.y - player.y);
+        if (dist < nearestGemDist) {
+            nearestGem = g;
+            nearestGemDist = dist;
+        }
+    }
+    if (nearestGem && nearestGemDist < AUTO_BATTLE_GEM_RADIUS) {
+        moveTowards(nearestGem.x, nearestGem.y);
+    }
+}
+
 function updatePlayer() {
-    if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
-    if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
-    if (keys['ArrowLeft'] || keys['KeyA']) {
-        player.x -= player.speed;
-        player.facingRight = false;
+    if (autoBattle) {
+        runAutoBattleMovement();
+    } else {
+        if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
+        if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
+        if (keys['ArrowLeft'] || keys['KeyA']) {
+            player.x -= player.speed;
+            player.facingRight = false;
+        }
+        if (keys['ArrowRight'] || keys['KeyD']) {
+            player.x += player.speed;
+            player.facingRight = true;
+        }
     }
-    if (keys['ArrowRight'] || keys['KeyD']) {
-        player.x += player.speed;
-        player.facingRight = true;
-    }
+
+    clampPlayerToActiveFortress();
 
     // Update camera to follow player (keep player centered)
     cameraX = player.x - canvas.width / 2;
     cameraY = player.y - canvas.height / 2;
+
+    checkStructureInteractions();
 
     // Gem collection
     for (let i = gems.length - 1; i >= 0; i--) {
@@ -415,7 +770,6 @@ function updatePlayer() {
 }
 
 function levelUp() {
-    isPaused = true;
     player.level++;
     player.xp = 0; // Reset XP to 0 after level up
     player.nextXp = Math.floor(player.nextXp * 1.2);
@@ -544,15 +898,34 @@ function levelUp() {
         }
     }
 
+    // Auto level-up: skip the modal entirely and apply a random option immediately.
+    if (autoLevelUp) {
+        const chosen = upgradeOptions[Math.floor(Math.random() * upgradeOptions.length)];
+        if (chosen.type === 'weapon') {
+            addWeaponToPlayer(player, chosen.data.name);
+        } else if (chosen.type === 'accessory') {
+            addAccessoryToPlayer(player, chosen.data.name);
+        } else {
+            applyRandomUpgradeEffect();
+        }
+        showToast(`レベルアップ（自動選択）: ${chosen.data.name}`);
+        return;
+    }
+
+    isPaused = true;
+
     // Update the modal with weapon and accessory options
     const modal = document.getElementById('level-up-modal');
+    const upgradeIcon = data => data.img
+        ? `<img src="${data.img}" alt="${data.name}" style="width: 28px; height: 28px; vertical-align: middle; margin-right: 6px;">`
+        : '';
     let modalContent = `
         <h2>レベルアップ！選択してください：</h2>
         ${upgradeOptions.map((option) => {
             if (option.type === 'weapon') {
-                return `<button class="upgrade-btn" onclick="selectWeapon('${option.data.name}')">${option.data.name} - ${option.data.description}</button>`;
+                return `<button class="upgrade-btn" onclick="selectWeapon('${option.data.name}')">${upgradeIcon(option.data)}${option.data.name} - ${option.data.description}</button>`;
             } else if (option.type === 'accessory') {
-                return `<button class="upgrade-btn" onclick="selectAccessory('${option.data.name}')">${option.data.name} - ${option.data.description}</button>`;
+                return `<button class="upgrade-btn" onclick="selectAccessory('${option.data.name}')">${upgradeIcon(option.data)}${option.data.name} - ${option.data.description}</button>`;
             } else { // random upgrade
                 return `<button class="upgrade-btn" onclick="selectRandomUpgrade()">${option.data.name} - ${option.data.description}</button>`;
             }
@@ -563,6 +936,10 @@ function levelUp() {
 
     modal.innerHTML = modalContent;
     modal.style.display = 'flex';
+
+    upgradeButtons = Array.from(modal.querySelectorAll('.upgrade-btn'));
+    selectedUpgradeIndex = 0;
+    updateUpgradeSelection();
 }
 
 // Function to skip level up selection
@@ -572,8 +949,9 @@ function skipLevelUp() {
     requestAnimationFrame(gameLoop);
 }
 
-function selectRandomUpgrade() {
-    // Apply a random upgrade (as a running bonus, same as accessory bonuses)
+// Applies one of the four random level-up bonuses (as a running stat bonus,
+// same as accessory bonuses). Shared by the manual and auto-levelup paths.
+function applyRandomUpgradeEffect() {
     const upgradeType = Math.floor(Math.random() * 4);
     switch(upgradeType) {
         case 0: // Increase damage for all weapons
@@ -592,6 +970,10 @@ function selectRandomUpgrade() {
             player.hp = player.maxHp;
             break;
     }
+}
+
+function selectRandomUpgrade() {
+    applyRandomUpgradeEffect();
 
     isPaused = false;
     document.getElementById('level-up-modal').style.display = 'none';
@@ -619,6 +1001,122 @@ function selectAccessory(accessoryName) {
     requestAnimationFrame(gameLoop);
 }
 
+let toastTimeout = null;
+function showToast(message) {
+    const toast = document.getElementById('toast-message');
+    if (!toast) return;
+    toast.innerText = message;
+    toast.style.display = 'block';
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// Builds (and rebuilds, e.g. after toggling invincibility) the debug panel's contents.
+function buildDebugMenu() {
+    const menu = document.getElementById('debug-menu');
+    if (!menu) return;
+
+    const weaponButtons = weaponTypes
+        .map(w => `<button class="debug-btn" onclick="debugAddWeapon('${w.name}')">${w.name}</button>`)
+        .join('');
+    const accessoryButtons = accessoryTypes
+        .map(a => `<button class="debug-btn" onclick="debugAddAccessory('${a.name}')">${a.name}</button>`)
+        .join('');
+    const enemyButtons = enemyTypes
+        .map(e => `<button class="debug-btn" onclick="debugSpawnEnemy('${e.name}')">${e.name}</button>`)
+        .join('');
+    const npcButtons = npcJobTypes
+        .map(j => `<button class="debug-btn" onclick="debugRecruitNpc('${j.id}')">${j.name}</button>`)
+        .join('');
+
+    menu.innerHTML = `
+        <h3>デバッグメニュー（F8で閉じる）</h3>
+        <button class="debug-btn" onclick="levelUp()">強制レベルアップ</button>
+        <button class="debug-btn" onclick="debugFullHeal()">全回復</button>
+        <button class="debug-btn" onclick="debugToggleInvincible()">無敵: ${invincible ? 'ON' : 'OFF'}（切替）</button>
+        <button class="debug-btn" onclick="debugKillAllEnemies()">敵を全滅させる</button>
+        <h3>武器を追加</h3>
+        ${weaponButtons}
+        <h3>アクセサリを追加</h3>
+        ${accessoryButtons}
+        <h3>敵を召喚</h3>
+        ${enemyButtons}
+        <h3>NPCを仲間にする</h3>
+        ${npcButtons}
+    `;
+}
+
+function debugFullHeal() {
+    player.hp = player.maxHp;
+}
+
+function debugToggleInvincible() {
+    invincible = !invincible;
+    showToast(invincible ? '無敵: ON' : '無敵: OFF');
+    buildDebugMenu();
+}
+
+function debugKillAllEnemies() {
+    enemies.length = 0;
+}
+
+function debugAddWeapon(name) {
+    addWeaponToPlayer(player, name);
+}
+
+function debugAddAccessory(name) {
+    addAccessoryToPlayer(player, name);
+}
+
+function debugSpawnEnemy(name) {
+    const type = enemyTypes.find(e => e.name === name);
+    if (!type) return;
+    const dir = player.facingRight ? 1 : -1;
+    enemies.push(createEnemy(type, player.x + dir * 100, player.y));
+}
+
+function debugRecruitNpc(jobId) {
+    player.npcs.push(createNpc(jobId, player.x, player.y));
+}
+
+// Shows a 3-job recruitment choice when the player visits a village.
+function openNpcSelectModal() {
+    isPaused = true;
+
+    const jobChoices = [];
+    const pool = [...npcJobTypes];
+    for (let i = 0; i < 3 && pool.length > 0; i++) {
+        const randomIndex = Math.floor(Math.random() * pool.length);
+        jobChoices.push(pool[randomIndex]);
+        pool.splice(randomIndex, 1);
+    }
+
+    const modal = document.getElementById('npc-select-modal');
+    modal.innerHTML = `
+        <h2>村人を仲間にする：</h2>
+        ${jobChoices.map(job => `<button class="upgrade-btn" onclick="selectNpcJob('${job.id}')">${job.name} - ${job.description}</button>`).join('')}
+        <br><br>
+        <button class="upgrade-btn" onclick="skipNpcSelect()">スキップする</button>
+    `;
+    modal.style.display = 'flex';
+}
+
+function selectNpcJob(jobId) {
+    player.npcs.push(createNpc(jobId, player.x, player.y));
+
+    isPaused = false;
+    document.getElementById('npc-select-modal').style.display = 'none';
+    requestAnimationFrame(gameLoop);
+}
+
+function skipNpcSelect() {
+    isPaused = false;
+    document.getElementById('npc-select-modal').style.display = 'none';
+    requestAnimationFrame(gameLoop);
+}
+
 
 function gameOver() {
     isGameOver = true;
@@ -632,22 +1130,16 @@ function updateUI() {
     document.getElementById('next-xp-val').innerText = player.nextXp;
     document.getElementById('hp-val').innerText = Math.ceil(player.hp);
 
-    // Update weapon information display with level
-    const currentWeapon = player.weapons[0];
+    // Update weapon information display: every equipped weapon with its level
     const weaponInfoElement = document.getElementById('weapon-info');
-
-    if (currentWeapon && currentWeapon.name) {
-        // Get the weapon type to find its image
-        const weaponType = getWeaponByName(currentWeapon.name);
-        if (weaponType && weaponType.img) {
-            // Create an img element for the weapon icon
-            weaponInfoElement.innerHTML = `<img src="${weaponType.img}" alt="${currentWeapon.name}" style="width: 30px; height: 30px;"> Level ${currentWeapon.level}`;
-        } else {
-            // Fallback to text if no image available
-            weaponInfoElement.innerText = `${currentWeapon.name} Level ${currentWeapon.level}`;
-        }
-    } else {
-        weaponInfoElement.innerText = 'Whip';
+    if (weaponInfoElement) {
+        weaponInfoElement.innerHTML = player.weapons.map(weapon => {
+            const weaponType = getWeaponByName(weapon.name);
+            if (weaponType && weaponType.img) {
+                return `<div><img src="${weaponType.img}" alt="${weapon.name}" style="width: 24px; height: 24px; vertical-align: middle;"> ${weapon.name} Lv.${weapon.level}</div>`;
+            }
+            return `<div>${weapon.name} Lv.${weapon.level}</div>`;
+        }).join('');
     }
 
     // Display stat bonuses as percentages, 100% being the unmodified baseline
@@ -660,6 +1152,35 @@ function updateUI() {
             <div>最大HP: ${100 + player.bonusMaxHp}%</div>
             <div>防御力: ${100 + player.bonusDefense}%</div>
         `;
+    }
+
+    // Display every acquired accessory with its level
+    const accessoryInfoElement = document.getElementById('accessory-info');
+    if (accessoryInfoElement) {
+        accessoryInfoElement.innerHTML = player.accessories.map(accessory => {
+            const accessoryType = getAccessoryByName(accessory.name);
+            if (accessoryType && accessoryType.img) {
+                return `<div><img src="${accessoryType.img}" alt="${accessory.name}" style="width: 24px; height: 24px; vertical-align: middle;"> ${accessory.name} Lv.${accessory.level}</div>`;
+            }
+            return `<div>${accessory.name} Lv.${accessory.level}</div>`;
+        }).join('');
+    }
+
+    const npcInfoElement = document.getElementById('npc-info');
+    if (npcInfoElement) {
+        if (player.npcs.length > 0) {
+            npcInfoElement.innerText = `仲間: ${player.npcs.map(n => n.name).join('、')}`;
+        } else {
+            npcInfoElement.innerText = '';
+        }
+    }
+
+    const autoBattleInfoElement = document.getElementById('auto-battle-info');
+    if (autoBattleInfoElement) {
+        const parts = [];
+        if (autoBattle) parts.push('自動戦闘: ON (B)');
+        if (autoLevelUp) parts.push('自動レベルアップ: ON (L)');
+        autoBattleInfoElement.innerText = parts.join(' / ');
     }
 
     const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -704,6 +1225,11 @@ function gameLoop() {
 
     updatePlayer();
     handleCombat();
+    updateStructures();
+
+    // Update and draw villages/fortresses with camera offset
+    villages.forEach(v => drawVillage(v));
+    fortresses.forEach(f => drawFortress(f));
 
     // Update and draw effects
     for (let i = effects.length - 1; i >= 0; i--) {
@@ -724,6 +1250,18 @@ function gameLoop() {
         e.draw();
     });
 
+    // Update and draw NPC companions, removing any that have fallen
+    for (let i = player.npcs.length - 1; i >= 0; i--) {
+        const npc = player.npcs[i];
+        updateNpc(npc);
+        if (npc.hp <= 0) {
+            effects.push(new Effect(npc.x, npc.y, 'hit'));
+            player.npcs.splice(i, 1);
+        } else {
+            drawNpc(npc);
+        }
+    }
+
 
     // Draw projectiles with camera offset
     projectiles.forEach(p => p.draw());
@@ -742,7 +1280,13 @@ function gameLoop() {
     }
     ctx.drawImage(currentPlayerImg, -player.radius, -player.radius, player.radius * 2, player.radius * 2);
 
-    // Draw HP bar above player
+    ctx.restore();
+
+    // Draw HP bar above player in its own (unmirrored) transform so it doesn't
+    // flip along with the sprite when the player faces left.
+    ctx.save();
+    ctx.translate(canvas.width / 2, canvas.height / 2);
+
     const barWidth = player.radius * 2;
     const barHeight = 4;
     const barX = -barWidth / 2;
@@ -772,12 +1316,88 @@ window.addEventListener('resize', () => {
     canvas.height = window.innerHeight;
 });
 
+// Creates an enemy object (update/draw methods included) from an enemy-type
+// definition at a specific world position. Shared by the ambient spawner and
+// the fortress monster-house event.
+function createEnemy(selectedType, x, y) {
+    const enemy = {
+        x: x,
+        y: y,
+        radius: selectedType.size,
+        color: selectedType.color,
+        speed: selectedType.speed,
+        hp: selectedType.hp,
+        maxHp: selectedType.hp,
+        name: selectedType.name,
+        img: null, // Will be loaded below
+        facingRight: true, // Track direction for flipping image
+
+        update() {
+            // Move towards player
+            const dx = player.x - this.x;
+            const dy = player.y - this.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+
+            if (dist > 0) {
+                this.x += (dx / dist) * this.speed;
+                this.y += (dy / dist) * this.speed;
+
+                // Update facing direction based on movement
+                this.facingRight = dx > 0;
+            }
+        },
+
+        draw() {
+            // Draw enemy image if available and loaded, otherwise fallback to circle
+            if (this.img && this.img.complete && this.img.naturalWidth !== 0) {
+                // Flip image based on direction
+                ctx.save();
+                if (!this.facingRight) {
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(this.img, -(this.x - cameraX + this.radius), this.y - cameraY - this.radius, this.radius * 2, this.radius * 2);
+                } else {
+                    ctx.drawImage(this.img, this.x - cameraX - this.radius, this.y - cameraY - this.radius, this.radius * 2, this.radius * 2);
+                }
+                ctx.restore();
+            } else {
+                // Fallback to drawing a colored circle
+                ctx.beginPath();
+                ctx.arc(this.x - cameraX, this.y - cameraY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.closePath();
+            }
+
+            // Draw HP bar above enemy
+            const barWidth = this.radius * 2;
+            const barHeight = 4;
+            const barX = this.x - cameraX - barWidth / 2;
+            const barY = this.y - cameraY - this.radius - 10;
+
+            // Background of HP bar
+            ctx.fillStyle = '#333';
+            ctx.fillRect(barX, barY, barWidth, barHeight);
+
+            // HP portion of bar
+            const hpRatio = this.hp / this.maxHp;
+            ctx.fillStyle = hpRatio > 0.5 ? '#0f0' : hpRatio > 0.25 ? '#ff0' : '#f00';
+            ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
+        }
+    };
+
+    if (selectedType.img) {
+        enemy.img = new Image();
+        enemy.img.src = selectedType.img;
+    }
+
+    return enemy;
+}
+
 // Spawn enemy function
 function spawnEnemy() {
     // Get available enemy types based on player level
     const availableTypes = getAvailableEnemyTypes(player.level);
-    const enemyType = Math.floor(Math.random() * availableTypes.length); // Randomly select one of the available enemy types
-    const selectedType = availableTypes[enemyType];
+    const selectedType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
 
     // Spawn just outside the visible viewport, in world (camera-relative) coordinates
     const size = selectedType.size;
@@ -790,77 +1410,5 @@ function spawnEnemy() {
         y = cameraY + Math.random() * canvas.height;
     }
 
-     // Create enemy object with update and draw methods
-     const enemy = {
-         x: x,
-         y: y,
-         radius: selectedType.size,
-         color: selectedType.color,
-         speed: selectedType.speed,
-         hp: selectedType.hp,
-         maxHp: selectedType.hp,
-         type: enemyType,
-         img: null, // Will be loaded later
-         facingRight: true, // Track direction for flipping image
-
-         update() {
-             // Move towards player
-             const dx = player.x - this.x;
-             const dy = player.y - this.y;
-             const dist = Math.sqrt(dx * dx + dy * dy);
-
-             if (dist > 0) {
-                 this.x += (dx / dist) * this.speed;
-                 this.y += (dy / dist) * this.speed;
-
-                 // Update facing direction based on movement
-                 this.facingRight = dx > 0;
-             }
-         },
-
-         draw() {
-             // Draw enemy image if available and loaded, otherwise fallback to circle
-             if (this.img && this.img.complete && this.img.naturalWidth !== 0) {
-                 // Flip image based on direction
-                 ctx.save();
-                 if (!this.facingRight) {
-                     ctx.scale(-1, 1);
-                     ctx.drawImage(this.img, -(this.x - cameraX + this.radius), this.y - cameraY - this.radius, this.radius * 2, this.radius * 2);
-                 } else {
-                     ctx.drawImage(this.img, this.x - cameraX - this.radius, this.y - cameraY - this.radius, this.radius * 2, this.radius * 2);
-                 }
-                 ctx.restore();
-             } else {
-                 // Fallback to drawing a colored circle
-                 ctx.beginPath();
-                 ctx.arc(this.x - cameraX, this.y - cameraY, this.radius, 0, Math.PI * 2);
-                 ctx.fillStyle = this.color;
-                 ctx.fill();
-                 ctx.closePath();
-             }
-
-             // Draw HP bar above enemy
-             const barWidth = this.radius * 2;
-             const barHeight = 4;
-             const barX = this.x - cameraX - barWidth / 2;
-             const barY = this.y - cameraY - this.radius - 10;
-
-             // Background of HP bar
-             ctx.fillStyle = '#333';
-             ctx.fillRect(barX, barY, barWidth, barHeight);
-
-             // HP portion of bar
-             const hpRatio = this.hp / this.maxHp;
-             ctx.fillStyle = hpRatio > 0.5 ? '#0f0' : hpRatio > 0.25 ? '#ff0' : '#f00';
-             ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
-         }
-     };
-
-     // Load enemy image
-     if (selectedType.img) {
-         enemy.img = new Image();
-         enemy.img.src = selectedType.img;
-     }
-
-    enemies.push(enemy);
+    enemies.push(createEnemy(selectedType, x, y));
 }

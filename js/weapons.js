@@ -10,107 +10,74 @@ const weaponTypes = [
         img: "img/whip.png",
         description: "シンプルな鞭攻撃"
     },
-    { 
-        name: "剣", 
+    {
+        name: "剣",
         type: "melee",
         damage: 25,
         cooldown: 60,
         range: 100,
         maxLevel: 8,
         img: "img/sword.png",
-        description: "鋭い剣の斬撃"
+        description: "鋭い剣の斬撃",
+        effect: "slash",
+        effectDuration: 10
     },
-    { 
-        name: "弓", 
+    {
+        name: "弓",
         type: "ranged",
         damage: 20,
         cooldown: 50,
-        range: 200,
+        range: 140,
         maxLevel: 8,
         img: "img/bow.png",
-        description: "正確な弓の射撃"
+        description: "弧を描いて飛ぶ矢の射撃",
+        arc: true,
+        projectileShape: "arrow"
     },
-    { 
-        name: "杖", 
+    {
+        name: "杖",
         type: "magic",
         damage: 30,
         cooldown: 70,
         range: 150,
         maxLevel: 8,
         img: "img/staff.png",
-        description: "魔法の杖のblast"
+        description: "画面内の最も近い敵へ距離を問わずブラストを放つ",
+        effect: "blast",
+        unlimitedRange: true
     },
-    { 
-        name: "斧", 
-        type: "melee",
+    {
+        name: "斧",
+        type: "thrown",
         damage: 35,
         cooldown: 80,
-        range: 120,
+        range: 240,
         maxLevel: 8,
         img: "img/axe.png",
-        description: "強力な斧の振り下ろし"
+        description: "弧を描きながら進行方向に投げつける"
     },
-    { 
-        name: "槍", 
+    {
+        name: "槍",
         type: "melee",
         damage: 28,
         cooldown: 55,
         range: 160,
         maxLevel: 8,
         img: "img/spear.png",
-        description: "突き刺す槍攻撃"
-    },
-    { 
-        name: "火の杖", 
-        type: "magic",
-        damage: 32,
-        cooldown: 65,
-        range: 180,
-        maxLevel: 8,
-        img: "img/fire_staff.png",
-        description: "ファイアボールの呪文"
-    },
-    { 
-        name: "氷の弓", 
-        type: "ranged",
-        damage: 22,
-        cooldown: 45,
-        range: 220,
-        maxLevel: 8,
-        img: "img/ice_bow.png",
-        description: "氷の矢の射撃"
-    },
-    { 
-        name: "雷のハンマー", 
-        type: "melee",
-        damage: 40,
-        cooldown: 90,
-        range: 140,
-        maxLevel: 8,
-        img: "img/lightning_hammer.png",
-        description: "雷のようなハンマーの打撃"
-    },
-    { 
-        name: "毒の短剣", 
-        type: "melee",
-        damage: 24,
-        cooldown: 50,
-        range: 90,
-        maxLevel: 8,
-        img: "img/dagger.png",
-        description: "毒を湛えた短剣の突き刺し"
+        description: "向いている方向への突き攻撃",
+        effect: "thrust"
     }
 ];
 
 // Player weapons system
 function initPlayerWeapons() {
     return [
-        { 
-            name: '鞭', 
-            damage: 15, 
-            cooldown: 40, 
-            lastFire: 0, 
-            range: 135,
+        {
+            name: '剣',
+            damage: 25,
+            cooldown: 60,
+            lastFire: 0,
+            range: 100,
             level: 1,
             maxLevel: 8
         }

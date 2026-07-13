@@ -12,13 +12,26 @@
         <div>XP: <span id="xp-val">0</span> / <span id="next-xp-val">100</span></div>
         <div>HP: <span id="hp-val">100</span></div>
         <div>Time: <span id="time-val">0:00</span></div>
-        <div>Weapon: <span id="weapon-info">Whip</span></div>
+        <div>Weapons:</div>
+        <div id="weapon-info"></div>
         <div id="stat-bonus-info"></div>
+        <div>Accessories:</div>
+        <div id="accessory-info"></div>
+        <div id="npc-info"></div>
+        <div id="auto-battle-info"></div>
     </div>
 
     <div id="level-up-modal">
         <h2>レベルアップ！アップグレードを選択：</h2>
     </div>
+
+    <div id="npc-select-modal">
+        <h2>村人を仲間にする：</h2>
+    </div>
+
+    <div id="toast-message"></div>
+
+    <div id="debug-menu"></div>
 
     <div id="game-over">
         <h1>ゲームオーバー</h1>
@@ -31,6 +44,8 @@
     <script src="js/weapons.js"></script>
     <script src="js/enemy_types.js"></script>
     <script src="js/accessories.js"></script>
+    <script src="js/npcs.js"></script>
+    <script src="js/structures.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>
