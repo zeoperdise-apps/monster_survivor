@@ -924,17 +924,20 @@ function levelUp() {
     // Create a combined list of all possible upgrades (weapons and accessories)
     const upgradeOptions = [];
 
-    // Get available weapons for this level
+    // Get available weapons for this level. Once the player already has the
+    // max number of weapons (4), a brand-new weapon type can't be equipped,
+    // so only offer ones they already own (to level up) instead of a dead option.
+    const atMaxWeapons = player.weapons.length >= 4;
     const availableWeapons = getAvailableWeapons(player.level);
     const weaponOptions = [];
 
     // Select up to 2 unique weapons that the player doesn't already have
+    // (or, if at the weapon cap, 2 unique weapons they already own)
     while (weaponOptions.length < 2 && availableWeapons.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableWeapons.length);
         const weapon = availableWeapons[randomIndex];
 
-        // Only add if player doesn't already have this weapon
-        if (!hasWeapon(player, weapon.name)) {
+        if (atMaxWeapons ? hasWeapon(player, weapon.name) : !hasWeapon(player, weapon.name)) {
             weaponOptions.push(weapon);
         }
 
@@ -972,7 +975,9 @@ function levelUp() {
         });
     }
 
-    // Add accessory options to the level up modal (only accessories the player doesn't have yet)
+    // Add accessory options to the level up modal (only accessories the player
+    // doesn't have yet; once every accessory type is owned, none are offered
+    // here and that slot falls through to the weapon-padding logic below)
     const availableAccessories = accessoryTypes.filter(a => !hasAccessory(player, a.name));
     const accessoryOptions = [];
 
@@ -997,11 +1002,15 @@ function levelUp() {
         upgradeOptions.splice(Math.floor(Math.random() * upgradeOptions.length), 1);
     }
 
-    // Ensure we have exactly 3 options (weapons + accessories)
+    // Ensure we have exactly 3 options (weapons + accessories). If at the
+    // weapon cap, only pad with owned weapons (to level up) - never a new,
+    // un-equippable type.
     while (upgradeOptions.length < 3) {
-        // Fill with random weapons if needed
         const allWeapons = getAvailableWeapons(player.level);
-        const randomWeapon = allWeapons[Math.floor(Math.random() * allWeapons.length)];
+        const candidatePool = atMaxWeapons ? allWeapons.filter(w => hasWeapon(player, w.name)) : allWeapons;
+        if (candidatePool.length === 0) break; // nothing left to pad with
+
+        const randomWeapon = candidatePool[Math.floor(Math.random() * candidatePool.length)];
         if (!upgradeOptions.some(option => option.type === 'weapon' && option.data.name === randomWeapon.name)) {
             upgradeOptions.push({
                 type: 'weapon',
