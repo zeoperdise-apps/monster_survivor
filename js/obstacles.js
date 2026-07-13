@@ -10,7 +10,7 @@ const GOLD_DROP_CHANCE = 0.25;
 
 const obstacleTypes = [
     { name: "ツボ", hp: 20, radius: 20, img: "img/pot.png", color: '#c68a3c' },
-    { name: "木", hp: 40, radius: 28, img: "img/tree.png", color: '#2f6b3a' }
+    { name: "木", hp: 40, radius: 84, img: "img/tree.png", color: '#2f6b3a' }
 ];
 
 const obstacles = [];
