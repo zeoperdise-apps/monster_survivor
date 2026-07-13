@@ -187,7 +187,7 @@ function performNpcAttack(npc, target) {
         target.hp -= job.damage;
         effects.push(new Effect(target.x, target.y, 'hit'));
         if (target.hp <= 0) {
-            gems.push(new Gem(target.x, target.y));
+            gems.push(new Gem(target.x, target.y, target.xp));
             const idx = enemies.indexOf(target);
             if (idx !== -1) enemies.splice(idx, 1);
             addBattleLog(`${npc.name}が${target.name}を倒した！`);

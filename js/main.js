@@ -518,12 +518,12 @@ class Effect {
 
 // XP Gem Class
 class Gem {
-    constructor(x, y) {
+    constructor(x, y, xp = 10) {
         this.x = x;
         this.y = y;
         this.radius = 4;
         this.color = '#5f5';
-        this.xp = 10;
+        this.xp = xp;
     }
 
     draw() {
@@ -565,7 +565,7 @@ function fireMeleeWeapon(weapon, damage) {
             effects.push(new Effect(e.x, e.y, 'hit'));
 
             if (e.hp <= 0) {
-                gems.push(new Gem(e.x, e.y));
+                gems.push(new Gem(e.x, e.y, e.xp));
                 enemies.splice(j, 1);
                 addBattleLog(`${weapon.name}で${e.name}を倒した！`);
             }
@@ -689,7 +689,7 @@ function handleCombat() {
                             e2.hp -= p.damage;
                             effects.push(new Effect(e2.x, e2.y, 'hit'));
                             if (e2.hp <= 0) {
-                                gems.push(new Gem(e2.x, e2.y));
+                                gems.push(new Gem(e2.x, e2.y, e2.xp));
                                 enemies.splice(k, 1);
                                 addBattleLog(`${e2.name}を倒した！`);
                             }
@@ -699,7 +699,7 @@ function handleCombat() {
                     e.hp -= p.damage;
                     effects.push(new Effect(e.x, e.y, 'hit'));
                     if (e.hp <= 0) {
-                        gems.push(new Gem(e.x, e.y));
+                        gems.push(new Gem(e.x, e.y, e.xp));
                         enemies.splice(j, 1);
                         addBattleLog(`${e.name}を倒した！`);
                     }
@@ -1454,6 +1454,7 @@ function createEnemy(selectedType, x, y) {
         hp: selectedType.hp,
         maxHp: selectedType.hp,
         damage: selectedType.damage,
+        xp: selectedType.xp,
         name: selectedType.name,
         img: null, // Will be loaded below
         facingRight: true, // Track direction for flipping image

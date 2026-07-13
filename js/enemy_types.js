@@ -1,7 +1,9 @@
 // Enemy type definitions with different behaviors. Each enemy only appears
 // within its own [minLevel, maxLevel] player-level range (maxLevel omitted
 // means "no upper bound"). Weaker early enemies phase out at higher levels;
-// late-game threats stay in the pool forever once unlocked.
+// late-game threats stay in the pool forever once unlocked. xp is scaled to
+// each enemy's overall strength (hp + damage), so tougher monsters are worth
+// more experience.
 const enemyTypes = [
     {
         color: '#f44',
@@ -9,6 +11,7 @@ const enemyTypes = [
         hp: 30,
         size: 30,
         damage: 5,
+        xp: 10,
         img: 'img/Goblin.png',
         name: "ゴブリン",
         minLevel: 1,
@@ -20,6 +23,7 @@ const enemyTypes = [
         hp: 45,
         size: 45,
         damage: 24,
+        xp: 23,
         img: 'img/Ogre.png',
         name: "オーガ",
         minLevel: 5,
@@ -31,6 +35,7 @@ const enemyTypes = [
         hp: 24,
         size: 27,
         damage: 18,
+        xp: 15,
         img: 'img/Skeleton.png',
         name: "スケルトン",
         minLevel: 3,
@@ -42,6 +47,7 @@ const enemyTypes = [
         hp: 60,
         size: 54,
         damage: 30,
+        xp: 30,
         img: 'img/Troll.png',
         name: "トロール",
         minLevel: 6,
@@ -53,6 +59,7 @@ const enemyTypes = [
         hp: 18,
         size: 21,
         damage: 12,
+        xp: 11,
         img: 'img/Ghost.png',
         name: "ゴースト",
         minLevel: 7,
@@ -64,6 +71,7 @@ const enemyTypes = [
         hp: 36,
         size: 27,
         damage: 21,
+        xp: 20,
         img: 'img/Wizard.png',
         name: "ウィザード",
         minLevel: 8,
@@ -75,6 +83,7 @@ const enemyTypes = [
         hp: 27,
         size: 36,
         damage: 27,
+        xp: 20,
         img: 'img/Demon.png',
         name: "デーモン",
         minLevel: 10
@@ -85,6 +94,7 @@ const enemyTypes = [
         hp: 54,
         size: 66,
         damage: 42,
+        xp: 35,
         img: 'img/Giant.png',
         name: "ジャイアント",
         minLevel: 12
@@ -95,6 +105,7 @@ const enemyTypes = [
         hp: 21,
         size: 21,
         damage: 18,
+        xp: 14,
         img: 'img/Shade.png',
         name: "シェード",
         minLevel: 15
@@ -105,6 +116,7 @@ const enemyTypes = [
         hp: 75,
         size: 81,
         damage: 60,
+        xp: 50,
         img: 'img/Dragon.png',
         name: "ドラゴン",
         minLevel: 18
