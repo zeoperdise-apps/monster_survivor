@@ -1,11 +1,11 @@
-// World structures: villages (recruit an NPC companion) and fortresses
-// (a "monster house" encounter that rewards a rescued NPC on clear).
+// ワールド上の拠点: 村（NPC仲間を勧誘できる）と要塞
+// （「モンスターハウス」を突破すると救出したNPCが報酬になる）。
 const villages = [];
 const fortresses = [];
 
 const FORTRESS_ENEMY_COUNT_BASE = 8;
 const FORTRESS_CLEAR_REWARD_GEMS = 10;
-const FORTRESS_RESPAWN_DELAY = 180; // frames (3s) after being cleared
+const FORTRESS_RESPAWN_DELAY = 180; // クリア後、再出現までのフレーム数（3秒）
 
 function createVillage(x, y) {
     const village = { x: x, y: y, radius: 50, consumed: false, img: null };
@@ -20,7 +20,7 @@ function createFortress(x, y) {
         x: x,
         y: y,
         radius: 260,
-        state: 'idle', // 'idle' | 'active' | 'cleared'
+        state: 'idle', // 'idle'（待機中）| 'active'（戦闘中）| 'cleared'（クリア済み）
         clearedAt: 0,
         img: null
     };
@@ -29,7 +29,7 @@ function createFortress(x, y) {
     return fortress;
 }
 
-// Places the initial set of villages/fortresses around the given origin point.
+// 指定した原点の周囲に、初期状態の村・要塞を配置する
 function initStructures(originX, originY) {
     for (let i = 0; i < 3; i++) {
         const angle = Math.random() * Math.PI * 2;
@@ -65,7 +65,7 @@ function activateFortress(fortress) {
         enemies.push(enemy);
     }
 
-    // Guardian: a tougher version of the strongest currently-available enemy type.
+    // 守護者: 現在出現可能な敵の中で最も強いタイプを強化したもの
     const guardianType = availableTypes[availableTypes.length - 1];
     const guardian = createEnemy(guardianType, fortress.x, fortress.y - 60);
     guardian.hp *= 4;
@@ -108,7 +108,7 @@ function updateStructures() {
     }
 }
 
-// Checks player collisions with villages/fortresses (recruit trigger / monster-house trigger).
+// プレイヤーと村・要塞の衝突を判定する（勧誘のトリガー／モンスターハウスのトリガー）
 function checkStructureInteractions() {
     for (const village of villages) {
         if (village.consumed) continue;
@@ -129,7 +129,7 @@ function checkStructureInteractions() {
     }
 }
 
-// Keeps the player from leaving an active fortress's battle area until it's cleared.
+// クリアするまで、戦闘中の要塞のエリアからプレイヤーが出られないようにする
 function clampPlayerToActiveFortress() {
     const activeFortress = fortresses.find(f => f.state === 'active');
     if (!activeFortress) return;

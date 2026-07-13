@@ -1,5 +1,5 @@
-// NPC companion job definitions. Each job has its own attack style, reusing
-// the same melee/ranged/heal patterns the player's weapons use.
+// NPC仲間の職業定義。各職業は固有の攻撃スタイルを持ち、プレイヤーの
+// 武器と同じ近接／遠隔／回復のパターンを再利用している。
 const npcJobTypes = [
     {
         id: 'warrior',
@@ -87,10 +87,12 @@ const npcJobTypes = [
     }
 ];
 
+// IDから職業定義データを取得する
 function getNpcJobById(id) {
     return npcJobTypes.find(j => j.id === id);
 }
 
+// 指定した職業のNPCインスタンスを生成する
 function createNpc(jobId, x, y) {
     const job = getNpcJobById(jobId) || npcJobTypes[0];
     const npc = {
@@ -113,11 +115,11 @@ function createNpc(jobId, x, y) {
     return npc;
 }
 
-// Moves an NPC: chase the nearest enemy in range, otherwise stay near the player.
+// NPCを移動させる: 射程内の最も近い敵を追いかけ、いなければプレイヤーの近くに留まる
 function updateNpcMovement(npc) {
     const job = getNpcJobById(npc.job);
     let target = null;
-    let targetDist = 400; // chase radius
+    let targetDist = 400; // 追跡範囲
 
     for (const e of enemies) {
         const dist = Math.hypot(e.x - npc.x, e.y - npc.y);
@@ -148,8 +150,8 @@ function updateNpcMovement(npc) {
     return target;
 }
 
-// Runs one NPC's job-specific attack. Returns true if it actually acted
-// (so the caller only resets the attack cooldown on a real action).
+// NPCの職業固有の攻撃を実行する。実際に行動した場合はtrueを返す
+// （呼び出し元は実際に行動したときだけクールダウンをリセットする）。
 function performNpcAttack(npc, target) {
     const job = getNpcJobById(npc.job);
     let attackType = job.attackType;
@@ -213,7 +215,7 @@ function updateNpc(npc) {
         }
     }
 
-    // Contact damage from touching enemies (mirrors handlePlayerDamage)
+    // 敵との接触ダメージ（handlePlayerDamageと同様の処理）
     if (frameCount >= npc.invulnerableUntil) {
         for (const e of enemies) {
             const dist = Math.hypot(npc.x - e.x, npc.y - e.y);

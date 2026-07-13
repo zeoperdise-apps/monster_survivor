@@ -4,7 +4,7 @@ const ctx = canvas.getContext('2d');
 canvas.width = window.innerWidth;
 canvas.height = window.innerHeight;
 
-// Game State
+// ゲーム状態
 const playerImg1 = new Image();
 playerImg1.src = 'img/player1.png';
 
@@ -15,12 +15,12 @@ let currentPlayerImg = playerImg1;
 
 const BASE_SPEED = 3;
 const BASE_MAX_HP = 100;
-const INVULNERABILITY_FRAMES = 30; // 0.5s of i-frames at 60fps after taking a hit
+const INVULNERABILITY_FRAMES = 30; // 被弾後、60fpsで0.5秒分の無敵時間
 
 const player = {
     x: canvas.width / 2,
     y: canvas.height / 2,
-    radius: 30, // Same size as the Goblin enemy
+    radius: 30, // ゴブリンと同じサイズ
     color: '#4af',
     speed: BASE_SPEED,
     hp: BASE_MAX_HP,
@@ -44,7 +44,7 @@ const player = {
 initPlayerAccessories(player);
 initStructures(player.x, player.y);
 
-// Recomputes derived stats (speed, max HP) from the current bonus totals.
+// 現在の合計ボーナス値から派生ステータス（速度・最大HP）を再計算する
 function applyPlayerStats() {
     const newMaxHp = BASE_MAX_HP * (1 + player.bonusMaxHp / 100);
     const hpGain = Math.max(0, newMaxHp - player.maxHp);
@@ -86,14 +86,14 @@ let autoLevelUp = false;
 let debugMode = false;
 let invincible = false;
 
-// Background tile setup. The field is unlimited: tiles aren't pre-generated
-// into an array, they're derived on the fly each frame from the camera's
-// current position, so the world extends forever in every direction.
+// 背景タイルの設定。フィールドは無制限: タイルは配列に事前生成せず、
+// 毎フレームカメラの現在位置から動的に算出するため、ワールドは
+// あらゆる方向に無限に広がる。
 const tileSize = 100;
 
-// Biome definitions. Which biome a tile belongs to is a deterministic
-// function of its world position (see getBiome), so no biome data needs to
-// be stored - it can be recomputed identically anywhere, any time.
+// バイオームの定義。タイルが属するバイオームはワールド座標から決定論的
+// に算出される（getBiome参照）ため、データを保存する必要がなく、
+// いつでもどこでも同じ結果を再計算できる。
 const BIOME_COLORS = {
     grassland: { fill: '#4a8c4a', detail: '#3d7a3d' },
     forest: { fill: '#2f6b3a', detail: '#204a28' },
@@ -109,11 +109,11 @@ function getBiome(worldX, worldY) {
     return 'cursed';
 }
 
-// Input
+// 入力
 window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-// Auto-battle toggle: hands movement over to a simple AI (see runAutoBattleMovement).
+// 自動戦闘の切替: 操作を簡易AIに委ねる（runAutoBattleMovement参照）
 window.addEventListener('keydown', e => {
     if (e.code === 'KeyB') {
         autoBattle = !autoBattle;
@@ -121,7 +121,7 @@ window.addEventListener('keydown', e => {
     }
 });
 
-// Auto-levelup toggle: skips the level-up modal and picks an option at random.
+// 自動レベルアップの切替: レベルアップ選択画面を出さずランダムに選ぶ
 window.addEventListener('keydown', e => {
     if (e.code === 'KeyL') {
         autoLevelUp = !autoLevelUp;
@@ -129,7 +129,7 @@ window.addEventListener('keydown', e => {
     }
 });
 
-// Debug menu toggle: a cheat panel for testing (level up, heal, spawn things, etc).
+// デバッグメニューの切替: テスト用のチートパネル（レベルアップ、回復、召喚など）
 window.addEventListener('keydown', e => {
     if (e.code === 'F8') {
         e.preventDefault();
@@ -146,9 +146,9 @@ window.addEventListener('keydown', e => {
     }
 });
 
-// Generic keyboard navigation for any choice modal that lists .upgrade-btn
-// buttons (level-up choices, NPC recruitment, etc.): arrow keys move the
-// highlighted option, Enter/Space activates it.
+// .upgrade-btnボタンを並べる選択モーダル（レベルアップ選択、NPC勧誘など）
+// 全般に使える汎用キーボードナビゲーション: 矢印キーでハイライトする
+// 選択肢を移動し、Enter/Spaceで決定する。
 let activeModalId = null;
 let modalButtons = [];
 let selectedModalIndex = 0;
@@ -159,7 +159,7 @@ function updateModalSelection() {
     });
 }
 
-// Call this right after populating a modal's innerHTML and showing it.
+// モーダルのinnerHTMLを設定して表示した直後に呼び出すこと。
 function enableModalKeyboardNav(modalId) {
     const modal = document.getElementById(modalId);
     activeModalId = modalId;
@@ -192,7 +192,7 @@ window.addEventListener('keydown', e => {
     }
 });
 
-// Retry button on the game-over screen also responds to Enter/Space.
+// ゲームオーバー画面のリトライボタンもEnter/Spaceに反応する。
 window.addEventListener('keydown', e => {
     if (!isGameOver) return;
     if (e.code === 'Enter' || e.code === 'Space') {
@@ -202,7 +202,7 @@ window.addEventListener('keydown', e => {
 });
 
 
-// Projectile Class
+// 弾クラス
 class Projectile {
     constructor(x, y, targetX, targetY, damage, splashRadius = 0, color = '#ff0', arc = false, blast = false, axe = false, arrow = false) {
         this.x = x;
@@ -224,7 +224,7 @@ class Projectile {
         this.angle = Math.atan2(dy, dx);
 
         if (arc) {
-            // Curve toward the target via a quadratic Bezier instead of a straight line.
+            // 直線ではなく2次ベジエ曲線で目標に向かって弧を描く。
             this.startX = x;
             this.startY = y;
             this.endX = targetX;
@@ -273,8 +273,7 @@ class Projectile {
 
     draw() {
         if (this.arrow) {
-            // Arrow: a thin shaft with fletching at the back and a point at the front,
-            // oriented along the direction it's currently traveling.
+            // 矢: 後端に矢羽根、先端に鏃を持つ細い軸で、現在の進行方向を向く
             const screenX = this.x - cameraX;
             const screenY = this.y - cameraY;
             ctx.save();
@@ -310,7 +309,7 @@ class Projectile {
         }
 
         if (this.axe) {
-            // Spinning axe silhouette: a short handle with a wedge-shaped blade.
+            // 回転する斧のシルエット: 短い柄とくさび形の刃
             const screenX = this.x - cameraX;
             const screenY = this.y - cameraY;
             ctx.save();
@@ -337,7 +336,7 @@ class Projectile {
         }
 
         if (this.blast) {
-            // Glowing blast: soft outer halo plus a bright core.
+            // 発光するブラスト: やわらかい外側のハローと明るい中心部
             const screenX = this.x - cameraX;
             const screenY = this.y - cameraY;
             const gradient = ctx.createRadialGradient(screenX, screenY, 0, screenX, screenY, this.radius * 2.5);
@@ -367,15 +366,15 @@ class Projectile {
     }
 }
 
-// Effect Class
+// エフェクトクラス
 class Effect {
     constructor(x, y, type, range, facingRight, life = 30) {
         this.x = x;
         this.y = y;
-        this.type = type; // 'hit', 'attack', 'whip', 'slash' or 'thrust'
+        this.type = type; // 'hit'（被弾）, 'attack'（攻撃）, 'whip'（鞭）, 'slash'（斬撃）, 'thrust'（突き）
         this.range = range;
         this.facingRight = facingRight;
-        this.life = life; // frames to live
+        this.life = life; // 生存フレーム数
         this.maxLife = life;
         this.size = 0;
         this.maxSize = 20;
@@ -396,24 +395,24 @@ class Effect {
         ctx.beginPath();
 
         if (this.type === 'hit') {
-            // Hit effect - expanding circle
+            // 被弾エフェクト - 広がる円
             ctx.arc(this.x - cameraX, this.y - cameraY, this.size, 0, Math.PI * 2);
             const alpha = this.life / this.maxLife;
             ctx.fillStyle = `rgba(255, 255, 0, ${alpha})`;
             ctx.fill();
         } else if (this.type === 'attack') {
-            // Attack effect - expanding circle
+            // 攻撃エフェクト - 広がる円
             ctx.arc(this.x - cameraX, this.y - cameraY, this.size, 0, Math.PI * 2);
             const alpha = this.life / this.maxLife;
             ctx.fillStyle = `rgba(255, 100, 0, ${alpha})`;
             ctx.fill();
         } else if (this.type === 'whip') {
-            // Whip crack: a tapered, wavy strip that snaps out quickly and
-            // fades, with a bright flash at the tip when fully extended.
+            // 鞭のクラック: 先端が細くなる波打つ帯状の形が素早く伸びて
+            // 消えていき、伸びきると先端が光る。
             const alpha = this.life / this.maxLife;
             const range = this.range || 135;
-            const progress = 1 - (this.life / this.maxLife); // 0 -> 1 over the effect's life
-            const extend = Math.min(1, progress * 2.5); // snaps out fast, then holds while fading
+            const progress = 1 - (this.life / this.maxLife); // エフェクト生存期間での進行度（0→1）
+            const extend = Math.min(1, progress * 2.5); // 素早く伸びきり、その後は消えるまで保持
             const length = range * extend;
             const dir = this.facingRight ? 1 : -1;
 
@@ -421,7 +420,7 @@ class Effect {
             const startY = player.y - cameraY;
 
             const segments = 12;
-            const waveAmount = 16 * (1 - extend * 0.6); // the wave settles down as the whip extends
+            const waveAmount = 16 * (1 - extend * 0.6); // 伸びるにつれて波が収まっていく
             const topPoints = [];
             const bottomPoints = [];
 
@@ -443,7 +442,7 @@ class Effect {
             ctx.fillStyle = `rgba(139, 90, 43, ${alpha})`;
             ctx.fill();
 
-            // Crack flash at the tip once the whip is nearly fully extended
+            // 鞭がほぼ伸びきったタイミングで先端が光るフラッシュ
             if (extend > 0.75) {
                 const tip = topPoints[topPoints.length - 1];
                 const flashAlpha = alpha * ((extend - 0.75) / 0.25);
@@ -453,19 +452,19 @@ class Effect {
                 ctx.fill();
             }
         } else if (this.type === 'slash') {
-            // Sword slash - a fan-shaped sweep in the facing direction
+            // 剣の斬撃 - 向いている方向への扇形の一閃
             const alpha = this.life / this.maxLife;
             const range = this.range || 100;
-            const progress = 1 - (this.life / this.maxLife); // 0 -> 1 over the effect's life
+            const progress = 1 - (this.life / this.maxLife); // エフェクト生存期間での進行度（0→1）
 
             const originX = player.x - cameraX;
             const originY = player.y - cameraY;
             const centerAngle = this.facingRight ? 0 : Math.PI;
-            const spread = Math.PI / 2; // 90 degree fan
+            const spread = Math.PI / 2; // 90度の扇形
             const startAngle = centerAngle - spread / 2;
             const sweepAngle = startAngle + spread * Math.min(1, progress * 1.6);
 
-            // Filled fan showing the slashed area
+            // 斬られた範囲を示す塗りつぶし扇形
             ctx.beginPath();
             ctx.moveTo(originX, originY);
             ctx.arc(originX, originY, range, startAngle, sweepAngle);
@@ -473,18 +472,18 @@ class Effect {
             ctx.fillStyle = `rgba(230, 230, 255, ${alpha * 0.35})`;
             ctx.fill();
 
-            // Bright blade edge along the leading edge of the sweep
+            // 一閃の先端に沿った明るい刃の線
             ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
             ctx.lineWidth = 4;
             ctx.beginPath();
             ctx.arc(originX, originY, range, startAngle, sweepAngle);
             ctx.stroke();
         } else if (this.type === 'thrust') {
-            // Spear thrust - a quick jab straight out in the facing direction
+            // 槍の突き - 向いている方向へまっすぐ素早く突き出す
             const alpha = this.life / this.maxLife;
             const range = this.range || 160;
-            const progress = 1 - (this.life / this.maxLife); // 0 -> 1 over the effect's life
-            const extend = Math.min(1, progress * 3); // reaches full length quickly, then holds while fading
+            const progress = 1 - (this.life / this.maxLife); // エフェクト生存期間での進行度（0→1）
+            const extend = Math.min(1, progress * 3); // 素早く伸びきり、その後は消えるまで保持
             const dir = this.facingRight ? 1 : -1;
             const length = range * extend;
 
@@ -493,7 +492,7 @@ class Effect {
             const tipX = originX + dir * length;
             const tipY = originY;
 
-            // Shaft
+            // 柄
             ctx.strokeStyle = `rgba(150, 110, 70, ${alpha})`;
             ctx.lineWidth = 5;
             ctx.beginPath();
@@ -501,7 +500,7 @@ class Effect {
             ctx.lineTo(tipX, tipY);
             ctx.stroke();
 
-            // Spearhead
+            // 穂先
             const headLength = 18;
             const headWidth = 10;
             ctx.beginPath();
@@ -517,7 +516,7 @@ class Effect {
     }
 }
 
-// XP Gem Class
+// XP宝石クラス
 class Gem {
     constructor(x, y, xp = 10) {
         this.x = x;
@@ -537,7 +536,7 @@ class Gem {
     }
 }
 
-// A projectile fired by a ranged enemy (e.g. Wizard's bolt, Dragon's breath) at the player.
+// 遠距離攻撃を持つ敵（ウィザードの弾、ドラゴンのブレスなど）がプレイヤーへ放つ弾
 class EnemyProjectile {
     constructor(x, y, targetX, targetY, damage, speed, radius, color, sourceName) {
         this.x = x;
@@ -568,7 +567,7 @@ class EnemyProjectile {
     }
 }
 
-// Updates enemy projectiles and applies damage/game over if one hits the player.
+// 敵の弾を更新し、プレイヤーに命中したらダメージ・ゲームオーバー判定を行う
 function updateEnemyBullets() {
     for (let i = enemyBullets.length - 1; i >= 0; i--) {
         const b = enemyBullets[i];
@@ -600,7 +599,7 @@ function updateEnemyBullets() {
     }
 }
 
-// Finds the nearest enemy within range, or null if none are in range.
+// 射程内で最も近い敵を探す。範囲内に敵がいなければnullを返す
 function findNearestEnemyInRange(range) {
     let nearest = null;
     let nearestDist = range;
@@ -614,8 +613,8 @@ function findNearestEnemyInRange(range) {
     return nearest;
 }
 
-// Melee weapons swing in the direction the player is facing and hit
-// everything in range on that side.
+// 近接武器はプレイヤーの向いている方向へ振り、その側の射程内にいる
+// すべての敵にダメージを与える。
 function fireMeleeWeapon(weapon, damage) {
     for (let j = enemies.length - 1; j >= 0; j--) {
         const e = enemies[j];
@@ -658,7 +657,7 @@ function fireMeleeWeapon(weapon, damage) {
     effects.push(new Effect(player.x, player.y, effectType, weapon.range, player.facingRight, effectDuration));
 }
 
-// Ranged weapons fire a single-target projectile at the nearest enemy in range.
+// 遠隔武器は射程内の最も近い敵1体を狙って単一の弾を発射する。
 function fireRangedWeapon(weapon, damage) {
     const target = findNearestEnemyInRange(weapon.range);
     if (!target) return false;
@@ -671,13 +670,13 @@ function fireRangedWeapon(weapon, damage) {
     return true;
 }
 
-// Magic weapons fire a projectile that splashes to nearby enemies on impact.
+// 魔法武器は命中時に周囲の敵へ範囲ダメージを与える弾を発射する。
 function fireMagicWeapon(weapon, damage) {
     const weaponType = getWeaponByName(weapon.name);
 
-    // Unlimited-range weapons can target the nearest enemy anywhere on screen,
-    // regardless of distance. The player is always drawn at screen center, so
-    // half the screen's diagonal covers the entire visible viewport.
+    // 射程無制限の武器は距離を問わず画面内の最も近い敵を狙える。
+    // プレイヤーは常に画面中央に描画されるため、画面の対角線の半分が
+    // 表示範囲全体をカバーする。
     const searchRange = (weaponType && weaponType.unlimitedRange)
         ? Math.hypot(canvas.width, canvas.height) / 2
         : weapon.range;
@@ -691,8 +690,8 @@ function fireMagicWeapon(weapon, damage) {
     return true;
 }
 
-// Thrown weapons are hurled straight ahead in the facing direction (not
-// aimed at a specific enemy), spinning as they arc through the air.
+// 投擲武器は（特定の敵を狙わず）向いている方向へまっすぐ投げつけられ、
+// 空中を弧を描きながら回転して飛ぶ。
 function fireThrownWeapon(weapon, damage) {
     const dir = player.facingRight ? 1 : -1;
     const targetX = player.x + dir * weapon.range;
@@ -724,13 +723,13 @@ function handleCombat() {
         if (fired) weapon.lastFire = frameCount;
     }
 
-    // Projectile - Enemy Collision
+    // 弾 - 敵の当たり判定
     for (let i = projectiles.length - 1; i >= 0; i--) {
         const p = projectiles[i];
         p.update();
 
-        // Remove once it leaves the visible area around the player, or (for
-        // arc shots) once it reaches the end of its curved flight path.
+        // プレイヤー周辺の表示範囲外に出たら、または（弧を描く弾の場合）
+        // 曲線軌道の終点に達したら削除する。
         if (p.x < cameraX - 50 || p.x > cameraX + canvas.width + 50 ||
             p.y < cameraY - 50 || p.y > cameraY + canvas.height + 50 ||
             (p.arc && p.t >= 1)) {
@@ -745,7 +744,7 @@ function handleCombat() {
             const dist = Math.sqrt((p.x - e.x) ** 2 + (p.y - e.y) ** 2);
             if (dist < p.radius + e.radius) {
                 if (p.splashRadius > 0) {
-                    // Magic splash: damage every enemy within the blast radius
+                    // 魔法の範囲ダメージ: 爆発半径内のすべての敵にダメージを与える
                     for (let k = enemies.length - 1; k >= 0; k--) {
                         const e2 = enemies[k];
                         const d2 = Math.hypot(p.x - e2.x, p.y - e2.y);
@@ -795,7 +794,7 @@ function handleCombat() {
     }
 }
 
-// Applies contact damage (and game over) when an enemy touches the player.
+// 敵がプレイヤーに触れたときの接触ダメージ（およびゲームオーバー処理）を適用する。
 function handlePlayerDamage() {
     if (isGameOver || invincible || frameCount < player.invulnerableUntil) return;
 
@@ -817,7 +816,7 @@ function handlePlayerDamage() {
     }
 }
 
-// Auto-battle: simple AI movement used in place of manual controls when enabled.
+// 自動戦闘: 有効時に手動操作の代わりに使われるシンプルなAI移動。
 const AUTO_BATTLE_FLEE_HP_RATIO = 0.3;
 const AUTO_BATTLE_CHASE_RADIUS = 400;
 const AUTO_BATTLE_GEM_RADIUS = 500;
@@ -844,14 +843,14 @@ function runAutoBattleMovement() {
         }
     }
 
-    // Badly hurt with an enemy nearby: run straight away from it.
+    // 瀕死かつ敵が近くにいる場合は、まっすぐ逃げる。
     if (nearestEnemy && nearestEnemyDist < AUTO_BATTLE_CHASE_RADIUS &&
         player.hp / player.maxHp < AUTO_BATTLE_FLEE_HP_RATIO) {
         moveTowards(player.x + (player.x - nearestEnemy.x), player.y + (player.y - nearestEnemy.y));
         return;
     }
 
-    // Otherwise close the distance to the nearest enemy so weapons can reach it.
+    // それ以外は武器が届くように最も近い敵との距離を詰める。
     if (nearestEnemy && nearestEnemyDist < AUTO_BATTLE_CHASE_RADIUS) {
         if (nearestEnemyDist > AUTO_BATTLE_STOP_DISTANCE) {
             moveTowards(nearestEnemy.x, nearestEnemy.y);
@@ -861,7 +860,7 @@ function runAutoBattleMovement() {
         return;
     }
 
-    // No threats nearby: go pick up any leftover XP gems.
+    // 近くに脅威がない場合は、残っている経験値ジェムを拾いに行く。
     let nearestGem = null;
     let nearestGemDist = Infinity;
     for (const g of gems) {
@@ -895,13 +894,13 @@ function updatePlayer() {
     clampPlayerToActiveFortress();
     resolvePlayerObstacleCollisions();
 
-    // Update camera to follow player (keep player centered)
+    // プレイヤーを追従するようにカメラを更新する（常に画面中央に保つ）
     cameraX = player.x - canvas.width / 2;
     cameraY = player.y - canvas.height / 2;
 
     checkStructureInteractions();
 
-    // Gem collection
+    // ジェムの回収
     for (let i = gems.length - 1; i >= 0; i--) {
         const g = gems[i];
         const dist = Math.sqrt((player.x - g.x)**2 + (player.y - g.y)**2);
@@ -917,22 +916,22 @@ function updatePlayer() {
 
 function levelUp() {
     player.level++;
-    player.xp = 0; // Reset XP to 0 after level up
+    player.xp = 0; // レベルアップ後、経験値を0にリセット
     player.nextXp = Math.floor(player.nextXp * 1.2);
     addBattleLog(`レベルアップ！Lv.${player.level}`);
 
-    // Create a combined list of all possible upgrades (weapons and accessories)
+    // 選択可能なアップグレード（武器・アクセサリー）をまとめたリストを作成する
     const upgradeOptions = [];
 
-    // Get available weapons for this level. Once the player already has the
-    // max number of weapons (4), a brand-new weapon type can't be equipped,
-    // so only offer ones they already own (to level up) instead of a dead option.
+    // このレベルで選択可能な武器を取得する。既に武器数の上限（4つ）に
+    // 達している場合は新しい武器種を装備できないため、選んでも何も
+    // 起きない選択肢にならないよう、既に所持している武器のみを提示する。
     const atMaxWeapons = player.weapons.length >= 4;
     const availableWeapons = getAvailableWeapons(player.level);
     const weaponOptions = [];
 
-    // Select up to 2 unique weapons that the player doesn't already have
-    // (or, if at the weapon cap, 2 unique weapons they already own)
+    // まだ所持していない武器を最大2種類選ぶ
+    // （武器数上限に達している場合は、既に所持している武器から2種類選ぶ）
     while (weaponOptions.length < 2 && availableWeapons.length > 0) {
         const randomIndex = Math.floor(Math.random() * availableWeapons.length);
         const weapon = availableWeapons[randomIndex];
@@ -941,23 +940,23 @@ function levelUp() {
             weaponOptions.push(weapon);
         }
 
-        // Remove the selected weapon to avoid duplicates
+        // 重複を避けるため、選択済みの武器を除去する
         availableWeapons.splice(randomIndex, 1);
     }
 
-    // If we don't have 2 unique weapons, fill with existing ones
+    // 2種類揃わない場合は、既存の武器で埋める
     if (weaponOptions.length < 2) {
         const allWeapons = getAvailableWeapons(player.level);
         for (let i = 0; i < 2 - weaponOptions.length; i++) {
             const randomWeapon = allWeapons[Math.floor(Math.random() * allWeapons.length)];
-            // Check that randomWeapon is valid before accessing its name
+            // randomWeaponのnameにアクセスする前に有効な値か確認する
             if (randomWeapon && !weaponOptions.some(w => w.name === randomWeapon.name)) {
                 weaponOptions.push(randomWeapon);
             }
         }
     }
 
-    // Add weapons to upgrade options
+    // 武器をアップグレード選択肢に追加する
     weaponOptions.forEach(weapon => {
         upgradeOptions.push({
             type: 'weapon',
@@ -965,8 +964,9 @@ function levelUp() {
         });
     });
 
-    // Add a random level-up option (10% chance). The option shown is the
-    // exact one applied on click (see RANDOM_UPGRADE_TYPES / selectRandomUpgrade).
+    // ランダムなレベルアップ選択肢を追加する（10%の確率）。表示される
+    // 選択肢はクリック時に適用されるものと完全に一致する
+    // （RANDOM_UPGRADE_TYPES / selectRandomUpgrade参照）。
     if (Math.random() < 0.1) {
         const randomType = RANDOM_UPGRADE_TYPES[Math.floor(Math.random() * RANDOM_UPGRADE_TYPES.length)];
         upgradeOptions.push({
@@ -975,9 +975,9 @@ function levelUp() {
         });
     }
 
-    // Add accessory options to the level up modal (only accessories the player
-    // doesn't have yet; once every accessory type is owned, none are offered
-    // here and that slot falls through to the weapon-padding logic below)
+    // レベルアップモーダルにアクセサリーの選択肢を追加する（プレイヤーが
+    // まだ持っていないアクセサリーのみ。全種類を所持済みの場合はここで
+    // 何も提示されず、その枠は下の武器での穴埋め処理に回る）
     const availableAccessories = accessoryTypes.filter(a => !hasAccessory(player, a.name));
     const accessoryOptions = [];
 
@@ -987,7 +987,7 @@ function levelUp() {
         availableAccessories.splice(randomIndex, 1);
     }
 
-    // Add accessories to upgrade options
+    // アクセサリーをアップグレード選択肢に追加する
     accessoryOptions.forEach(accessory => {
         upgradeOptions.push({
             type: 'accessory',
@@ -995,20 +995,20 @@ function levelUp() {
         });
     });
 
-    // Cap at 3 options: weapons always contribute 2, and the random/accessory
-    // slots can occasionally push the total to 4. Drop extras at random so no
-    // one category is always the one discarded.
+    // 選択肢を最大3つに制限する: 武器は常に2つ含まれ、ランダム／アクセサリー
+    // の枠が加わると合計が4つになることがある。特定のカテゴリーだけが
+    // 常に除外されないよう、超過分はランダムに間引く。
     while (upgradeOptions.length > 3) {
         upgradeOptions.splice(Math.floor(Math.random() * upgradeOptions.length), 1);
     }
 
-    // Ensure we have exactly 3 options (weapons + accessories). If at the
-    // weapon cap, only pad with owned weapons (to level up) - never a new,
-    // un-equippable type.
+    // 選択肢がちょうど3つ（武器＋アクセサリー）になるようにする。武器数が
+    // 上限に達している場合は、既に所持している武器（レベルアップ用）のみで
+    // 穴埋めし、装備できない新しい武器種は絶対に入れない。
     while (upgradeOptions.length < 3) {
         const allWeapons = getAvailableWeapons(player.level);
         const candidatePool = atMaxWeapons ? allWeapons.filter(w => hasWeapon(player, w.name)) : allWeapons;
-        if (candidatePool.length === 0) break; // nothing left to pad with
+        if (candidatePool.length === 0) break; // 穴埋めに使えるものがもうない
 
         const randomWeapon = candidatePool[Math.floor(Math.random() * candidatePool.length)];
         if (!upgradeOptions.some(option => option.type === 'weapon' && option.data.name === randomWeapon.name)) {
@@ -1019,16 +1019,16 @@ function levelUp() {
         }
     }
 
-    // Make sure we don't have undefined weapons or accessories
+    // 未定義の武器・アクセサリーが紛れ込んでいないか確認する
     for (let i = 0; i < upgradeOptions.length; i++) {
         if (!upgradeOptions[i].data) {
-            // Remove invalid option
+            // 無効な選択肢を除去する
             upgradeOptions.splice(i, 1);
             i--;
         }
     }
 
-    // Auto level-up: skip the modal entirely and apply a random option immediately.
+    // 自動レベルアップ: モーダルを完全にスキップし、ランダムな選択肢を即座に適用する。
     if (autoLevelUp) {
         const chosen = upgradeOptions[Math.floor(Math.random() * upgradeOptions.length)];
         if (chosen.type === 'weapon') {
@@ -1044,7 +1044,7 @@ function levelUp() {
 
     isPaused = true;
 
-    // Update the modal with weapon and accessory options
+    // モーダルに武器・アクセサリーの選択肢を反映する
     const modal = document.getElementById('level-up-modal');
     const upgradeIcon = data => data.img
         ? `<img src="${data.img}" alt="${data.name}" style="width: 28px; height: 28px; vertical-align: middle; margin-right: 6px;">`
@@ -1056,7 +1056,7 @@ function levelUp() {
                 return `<button class="upgrade-btn" onclick="selectWeapon('${option.data.name}')">${upgradeIcon(option.data)}${option.data.name} - ${option.data.description}</button>`;
             } else if (option.type === 'accessory') {
                 return `<button class="upgrade-btn" onclick="selectAccessory('${option.data.name}')">${upgradeIcon(option.data)}${option.data.name} - ${option.data.description}</button>`;
-            } else { // random upgrade
+            } else { // ランダムアップグレード
                 return `<button class="upgrade-btn" onclick="selectRandomUpgrade('${option.data.id}')">${option.data.name} - ${option.data.description}</button>`;
             }
         }).join('')}
@@ -1070,16 +1070,16 @@ function levelUp() {
     enableModalKeyboardNav('level-up-modal');
 }
 
-// Function to skip level up selection
+// レベルアップの選択をスキップする関数
 function skipLevelUp() {
     isPaused = false;
     document.getElementById('level-up-modal').style.display = 'none';
     requestAnimationFrame(gameLoop);
 }
 
-// The rare (10% chance) random level-up bonuses. Each entry's `apply()` is
-// the one and only effect tied to that id, so the option the player sees and
-// clicks is always exactly what gets applied (no separate re-roll on click).
+// レアな（10%の確率の）ランダムレベルアップボーナス。各エントリの`apply()`は
+// そのidに紐づく唯一の効果であり、プレイヤーが見てクリックした選択肢が
+// 常にそのまま適用される（クリック時に別の抽選が走ることはない）。
 const RANDOM_UPGRADE_TYPES = [
     {
         id: 'damage',
@@ -1128,19 +1128,19 @@ function selectRandomUpgrade(id) {
 }
 
 function selectWeapon(weaponName) {
-    // Add the selected weapon to player's inventory
+    // 選択した武器をプレイヤーの所持リストに追加する
     addWeaponToPlayer(player, weaponName);
 
-    // Close the modal
+    // モーダルを閉じる
     document.getElementById('level-up-modal').style.display = 'none';
 
-    // Resume game
+    // ゲームを再開する
     isPaused = false;
     requestAnimationFrame(gameLoop);
 }
 
 function selectAccessory(accessoryName) {
-    // Add the selected accessory to player's inventory and apply its bonus
+    // 選択したアクセサリーをプレイヤーの所持リストに追加し、その効果を適用する
     addAccessoryToPlayer(player, accessoryName);
 
     isPaused = false;
@@ -1162,8 +1162,8 @@ function showToast(message) {
     addBattleLog(message);
 }
 
-// Persistent scrolling battle log shown at the bottom of the screen.
-const BATTLE_LOG_MAX_LINES = 500; // generous cap so the whole session stays scrollable without unbounded growth
+// 画面下部に表示する、スクロール可能な永続的な戦闘ログ。
+const BATTLE_LOG_MAX_LINES = 500; // セッション全体がスクロールし続けられるよう余裕を持たせた上限（無限増加は防ぐ）
 const battleLog = [];
 
 function addBattleLog(message) {
@@ -1176,14 +1176,14 @@ function addBattleLog(message) {
     if (logElement) {
         const wasScrolledToBottom = logElement.scrollHeight - logElement.scrollTop <= logElement.clientHeight + 4;
         logElement.innerHTML = battleLog.map(line => `<div>${line}</div>`).join('');
-        // Only auto-scroll to the newest entry if the player hasn't scrolled up to read history.
+        // プレイヤーが履歴を読むために上へスクロールしていない場合のみ、最新行へ自動スクロールする。
         if (wasScrolledToBottom) {
             logElement.scrollTop = logElement.scrollHeight;
         }
     }
 }
 
-// Builds (and rebuilds, e.g. after toggling invincibility) the debug panel's contents.
+// デバッグパネルの内容を構築する（無敵切替時などに再構築もされる）。
 function buildDebugMenu() {
     const menu = document.getElementById('debug-menu');
     if (!menu) return;
@@ -1226,7 +1226,7 @@ function debugToggleInvincible() {
     invincible = !invincible;
     showToast(invincible ? '無敵: ON' : '無敵: OFF');
     buildDebugMenu();
-    enableModalKeyboardNav('debug-menu'); // rebuilt buttons are new DOM nodes
+    enableModalKeyboardNav('debug-menu'); // 再構築されたボタンは新しいDOMノードになるため
 }
 
 function debugKillAllEnemies() {
@@ -1252,7 +1252,7 @@ function debugRecruitNpc(jobId) {
     player.npcs.push(createNpc(jobId, player.x, player.y));
 }
 
-// Shows a 3-job recruitment choice when the player visits a village.
+// プレイヤーが村を訪れたときに、3つの職業から選ぶ勧誘選択肢を表示する。
 function openNpcSelectModal() {
     const jobChoices = [];
     const pool = [...npcJobTypes];
@@ -1262,7 +1262,7 @@ function openNpcSelectModal() {
         pool.splice(randomIndex, 1);
     }
 
-    // Auto-levelup also covers village recruitment: skip the modal and pick at random.
+    // 自動レベルアップは村の勧誘にも適用される: モーダルをスキップしランダムに選ぶ。
     if (autoLevelUp) {
         const chosen = jobChoices[Math.floor(Math.random() * jobChoices.length)];
         player.npcs.push(createNpc(chosen.id, player.x, player.y));
@@ -1313,7 +1313,7 @@ function updateUI() {
     document.getElementById('hp-val').innerText = Math.ceil(player.hp);
     document.getElementById('gold-val').innerText = goldCoins;
 
-    // Weapon display: icons only (name/level available via tooltip on hover)
+    // 武器表示: アイコンのみ（名前／レベルはホバー時のツールチップで確認可能）
     const weaponInfoElement = document.getElementById('weapon-info');
     if (weaponInfoElement) {
         weaponInfoElement.innerHTML = player.weapons.map(weapon => {
@@ -1329,7 +1329,7 @@ function updateUI() {
         }).join('');
     }
 
-    // Display stat bonuses as percentages, 100% being the unmodified baseline
+    // ステータスボーナスをパーセンテージで表示する。100%が未強化の基準値。
     const statBonusElement = document.getElementById('stat-bonus-info');
     if (statBonusElement) {
         statBonusElement.innerHTML = `
@@ -1342,7 +1342,7 @@ function updateUI() {
         `;
     }
 
-    // Accessory display: icons only (name/level available via tooltip on hover)
+    // アクセサリー表示: アイコンのみ（名前／レベルはホバー時のツールチップで確認可能）
     const accessoryInfoElement = document.getElementById('accessory-info');
     if (accessoryInfoElement) {
         accessoryInfoElement.innerHTML = player.accessories.map(accessory => {
@@ -1383,8 +1383,8 @@ function updateUI() {
 
 
 function drawBackground() {
-    // Generate only the tiles currently visible around the camera, so the
-    // field never runs out no matter how far the player wanders.
+    // カメラ周辺の現在表示されているタイルのみを生成するため、プレイヤーが
+    // どれだけ遠くまで移動してもフィールドが尽きることはない。
     const startTileX = Math.floor(cameraX / tileSize) - 1;
     const endTileX = Math.floor((cameraX + canvas.width) / tileSize) + 1;
     const startTileY = Math.floor(cameraY / tileSize) - 1;
@@ -1415,14 +1415,14 @@ function drawBackground() {
 function gameLoop() {
     if (isPaused || isGameOver) return;
 
-    // Switch between player images for animation every 10 frames
+    // 10フレームごとにプレイヤー画像を切り替えてアニメーションさせる
     if (frameCount % 10 === 0) {
         currentPlayerImg = currentPlayerImg === playerImg1 ? playerImg2 : playerImg1;
     }
 
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Draw background first
+    // まず背景を描画する
     drawBackground();
 
     updatePlayer();
@@ -1430,14 +1430,14 @@ function gameLoop() {
     updateStructures();
     updateObstacleSpawns();
 
-    // Update and draw villages/fortresses with camera offset
+    // カメラオフセットを適用して村・要塞を更新・描画する
     villages.forEach(v => drawVillage(v));
     fortresses.forEach(f => drawFortress(f));
 
-    // Draw destructible obstacles with camera offset
+    // カメラオフセットを適用して破壊可能オブジェクトを描画する
     obstacles.forEach(o => drawObstacle(o));
 
-    // Update and draw effects
+    // エフェクトを更新・描画する
     for (let i = effects.length - 1; i >= 0; i--) {
         effects[i].update();
         effects[i].draw();
@@ -1446,17 +1446,17 @@ function gameLoop() {
         }
     }
 
-    // Draw gems with camera offset
+    // カメラオフセットを適用してジェムを描画する
     gems.forEach(g => g.draw());
 
 
-    // Update and draw enemies with camera offset
+    // カメラオフセットを適用して敵を更新・描画する
     enemies.forEach(e => {
         e.update();
         e.draw();
     });
 
-    // Update and draw NPC companions, removing any that have fallen
+    // NPC仲間を更新・描画し、倒れた者は除去する
     for (let i = player.npcs.length - 1; i >= 0; i--) {
         const npc = player.npcs[i];
         updateNpc(npc);
@@ -1469,22 +1469,22 @@ function gameLoop() {
     }
 
 
-    // Draw projectiles with camera offset
+    // カメラオフセットを適用して弾を描画する
     projectiles.forEach(p => p.draw());
 
-    // Update and draw enemy ranged attacks
+    // 敵の遠距離攻撃を更新・描画する
     updateEnemyBullets();
     enemyBullets.forEach(b => b.draw());
 
-    // Spawn enemies
-    if (frameCount % 100 === 0) { // Spawn enemy every 100 frames
+    // 敵を出現させる
+    if (frameCount % 100 === 0) { // 100フレームごとに敵を1体出現させる
         spawnEnemy();
     }
 
-// Draw player at center of screen (camera is adjusted so player stays in center)
+// プレイヤーを画面中央に描画する（カメラは常にプレイヤーが中央になるよう調整されている）
     ctx.save();
 
-    ctx.translate(canvas.width / 2, canvas.height / 2); // Always draw player at center
+    ctx.translate(canvas.width / 2, canvas.height / 2); // 常に画面中央にプレイヤーを描画する
     if (!player.facingRight) {
         ctx.scale(-1, 1);
     }
@@ -1492,8 +1492,8 @@ function gameLoop() {
 
     ctx.restore();
 
-    // Draw HP bar above player in its own (unmirrored) transform so it doesn't
-    // flip along with the sprite when the player faces left.
+    // プレイヤーが左を向いてもスプライトと一緒に反転しないよう、HPバーは
+    // 別の（ミラーしていない）変換の中でプレイヤーの上に描画する。
     ctx.save();
     ctx.translate(canvas.width / 2, canvas.height / 2);
 
@@ -1502,11 +1502,11 @@ function gameLoop() {
     const barX = -barWidth / 2;
     const barY = -player.radius - 10;
 
-    // Background of HP bar
+    // HPバーの背景
     ctx.fillStyle = '#333';
     ctx.fillRect(barX, barY, barWidth, barHeight);
 
-    // HP portion of bar
+    // HP残量部分のバー
     const hpRatio = player.hp / player.maxHp;
     ctx.fillStyle = hpRatio > 0.5 ? '#0f0' : hpRatio > 0.25 ? '#ff0' : '#f00';
     ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
@@ -1520,15 +1520,15 @@ function gameLoop() {
 
 gameLoop();
 
-// Handle resize
+// リサイズ処理
 window.addEventListener('resize', () => {
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 });
 
-// Creates an enemy object (update/draw methods included) from an enemy-type
-// definition at a specific world position. Shared by the ambient spawner and
-// the fortress monster-house event.
+// 敵タイプの定義から、指定したワールド座標に敵オブジェクト
+// （update/drawメソッド込み）を生成する。通常のスポーンと要塞の
+// モンスターハウスイベントの両方で共用する。
 function createEnemy(selectedType, x, y) {
     const enemy = {
         x: x,
@@ -1541,10 +1541,10 @@ function createEnemy(selectedType, x, y) {
         damage: selectedType.damage,
         xp: selectedType.xp,
         name: selectedType.name,
-        img: null, // Will be loaded below
-        facingRight: true, // Track direction for flipping image
+        img: null, // 下で読み込まれる
+        facingRight: true, // 画像反転のための向きを記録する
 
-        // Ranged-attack stats (only set for enemies with attackType 'ranged')
+        // 遠距離攻撃のステータス（attackTypeが'ranged'の敵にのみ設定される）
         attackType: selectedType.attackType || 'melee',
         rangedDamage: selectedType.rangedDamage,
         rangedCooldown: selectedType.rangedCooldown,
@@ -1555,7 +1555,7 @@ function createEnemy(selectedType, x, y) {
         lastRangedAttack: frameCount,
 
         update() {
-            // Move towards player
+            // プレイヤーに向かって移動する
             const dx = player.x - this.x;
             const dy = player.y - this.y;
             const dist = Math.sqrt(dx * dx + dy * dy);
@@ -1564,9 +1564,9 @@ function createEnemy(selectedType, x, y) {
                 this.x += (dx / dist) * this.speed;
                 this.y += (dy / dist) * this.speed;
 
-                // Update facing direction based on movement, with a dead
-                // zone so it doesn't flicker when dx hovers near zero
-                // (e.g. several enemies overlapping the same target).
+                // 移動方向に応じて向きを更新する。dxが0付近で揺れ動く場合
+                // （例: 複数の敵が同じ目標に重なっている場合）に画像が
+                // ちらつかないよう、不感帯を設ける。
                 const FACING_DEADZONE = 5;
                 if (dx > FACING_DEADZONE) {
                     this.facingRight = true;
@@ -1588,9 +1588,9 @@ function createEnemy(selectedType, x, y) {
         },
 
         draw() {
-            // Draw enemy image if available and loaded, otherwise fallback to circle
+            // 画像が利用可能で読み込み済みならそれを描画し、そうでなければ円で代用する
             if (this.img && this.img.complete && this.img.naturalWidth !== 0) {
-                // Flip image based on direction
+                // 向きに応じて画像を反転する
                 ctx.save();
                 if (!this.facingRight) {
                     ctx.scale(-1, 1);
@@ -1600,7 +1600,7 @@ function createEnemy(selectedType, x, y) {
                 }
                 ctx.restore();
             } else {
-                // Fallback to drawing a colored circle
+                // 色付きの円で代用する
                 ctx.beginPath();
                 ctx.arc(this.x - cameraX, this.y - cameraY, this.radius, 0, Math.PI * 2);
                 ctx.fillStyle = this.color;
@@ -1608,17 +1608,17 @@ function createEnemy(selectedType, x, y) {
                 ctx.closePath();
             }
 
-            // Draw HP bar above enemy
+            // 敵の上にHPバーを描画する
             const barWidth = this.radius * 2;
             const barHeight = 4;
             const barX = this.x - cameraX - barWidth / 2;
             const barY = this.y - cameraY - this.radius - 10;
 
-            // Background of HP bar
+            // HPバーの背景
             ctx.fillStyle = '#333';
             ctx.fillRect(barX, barY, barWidth, barHeight);
 
-            // HP portion of bar
+            // HP残量部分のバー
             const hpRatio = this.hp / this.maxHp;
             ctx.fillStyle = hpRatio > 0.5 ? '#0f0' : hpRatio > 0.25 ? '#ff0' : '#f00';
             ctx.fillRect(barX, barY, barWidth * hpRatio, barHeight);
@@ -1633,13 +1633,13 @@ function createEnemy(selectedType, x, y) {
     return enemy;
 }
 
-// Spawn enemy function
+// 敵を出現させる関数
 function spawnEnemy() {
-    // Get available enemy types based on player level
+    // プレイヤーレベルに応じて出現可能な敵タイプを取得する
     const availableTypes = getAvailableEnemyTypes(player.level);
     const selectedType = availableTypes[Math.floor(Math.random() * availableTypes.length)];
 
-    // Spawn just outside the visible viewport, in world (camera-relative) coordinates
+    // 表示範囲のすぐ外側、ワールド（カメラ基準）座標に出現させる
     const size = selectedType.size;
     let x, y;
     if (Math.random() < 0.5) {

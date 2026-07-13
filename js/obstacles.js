@@ -1,14 +1,14 @@
-// Destructible world objects (pots, trees). They block the player like a
-// solid body, and destroying one has a small chance to drop a gold coin.
-// Placement is deterministic (hashed from world-cell coordinates) so the
-// same cell always produces the same obstacle, without needing to store an
-// ever-growing array as the player explores the unlimited field.
+// 破壊可能なワールドオブジェクト（ツボ、木）。プレイヤーと同様に固い
+// 当たり判定を持ち、破壊すると低確率で金貨がドロップする。配置は
+// （ワールドのセル座標をハッシュ化した）決定論的な方式のため、同じ
+// セルには常に同じオブジェクトが生成され、無制限フィールドを探索して
+// も肥大化し続ける配列を保持する必要がない。
 const OBSTACLE_CELL_SIZE = 300;
 const OBSTACLE_SPAWN_CHANCE = 0.35;
-const OBSTACLE_SAFE_ZONE_RADIUS = 250; // keep the player's starting spot clear
+const OBSTACLE_SAFE_ZONE_RADIUS = 250; // プレイヤーの開始地点周辺は空けておく
 const GOLD_DROP_CHANCE = 0.01;
 const MEAT_DROP_CHANCE = 0.05;
-const MEAT_HEAL_RATIO = 0.3; // heals 30% of max HP
+const MEAT_HEAL_RATIO = 0.3; // 最大HPの30%を回復
 
 const obstacleTypes = [
     { name: "ツボ", hp: 20, radius: 20, img: "img/pot.png", color: '#c68a3c' },
@@ -19,7 +19,7 @@ const obstacles = [];
 const destroyedObstacleCells = new Set();
 let goldCoins = 0;
 
-// Deterministic pseudo-random value in [0, 1) from two integers.
+// 2つの整数から[0, 1)の決定論的な疑似乱数値を生成する
 function hash2D(a, b) {
     const n = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
     return n - Math.floor(n);
@@ -56,9 +56,9 @@ function createObstacle(type, x, y, cx, cy) {
     return obstacle;
 }
 
-// Ensures obstacles exist for every cell currently near the camera, and
-// drops obstacles that have drifted far out of view (they'll deterministically
-// regenerate if the player comes back, unless that cell was already destroyed).
+// カメラ付近の各セルに障害物が存在するようにし、視界から大きく外れた
+// 障害物は削除する（そのセルが既に破壊済みでない限り、プレイヤーが
+// 戻ってくれば決定論的に再生成される）。
 function updateObstacleSpawns() {
     const startCX = Math.floor(cameraX / OBSTACLE_CELL_SIZE) - 1;
     const endCX = Math.floor((cameraX + canvas.width) / OBSTACLE_CELL_SIZE) + 1;
@@ -110,8 +110,8 @@ function drawObstacle(o) {
     }
 }
 
-// Marks the obstacle's cell as permanently cleared, removes it, and rolls
-// for rare gold coin and meat drops (both independent, either or both can happen).
+// 障害物のセルを永続的にクリア済みとして記録し、障害物を削除したうえで
+// 金貨・肉のレアドロップ判定を行う（両者は独立しており、両方発生することもある）。
 function destroyObstacle(o) {
     destroyedObstacleCells.add(cellKey(o.cx, o.cy));
     const idx = obstacles.indexOf(o);
@@ -139,7 +139,7 @@ function destroyObstacle(o) {
     }
 }
 
-// Solid collision: pushes the player back out of any obstacle it overlaps.
+// 固い衝突判定: プレイヤーが重なった障害物から押し出す
 function resolvePlayerObstacleCollisions() {
     for (const o of obstacles) {
         const dx = player.x - o.x;

@@ -1,11 +1,10 @@
-// Enemy type definitions with different behaviors. Each enemy only appears
-// within its own [minLevel, maxLevel] player-level range (maxLevel omitted
-// means "no upper bound"). Weaker early enemies phase out at higher levels;
-// late-game threats stay in the pool forever once unlocked. xp is scaled to
-// each enemy's overall strength (hp + damage), so tougher monsters are worth
-// more experience. hp increases gradually (roughly exponentially) following
-// unlock order, from Goblin (30) up to Dragon (500), rather than a flat
-// multiplier applied to the old per-type values.
+// 挙動の異なる敵タイプの定義。各敵は自身の[minLevel, maxLevel]という
+// プレイヤーレベル範囲内でのみ出現する（maxLevel省略時は上限なし）。
+// 序盤の弱い敵は高レベルになると出現しなくなり、終盤の強敵は一度解放
+// されるとずっと出現し続ける。xpは各敵の総合的な強さ（hp+damage）に
+// 応じてスケールしており、強い敵ほど多くの経験値を得られる。
+// hpは解放順に沿ってゴブリン（30）からドラゴン（500）まで、旧値への
+// 一律倍率ではなく、なだらかに（ほぼ指数的に）増加するようにしている。
 const enemyTypes = [
     {
         color: '#f44',
@@ -139,13 +138,13 @@ const enemyTypes = [
     }
 ];
 
-// Function to get available enemy types based on player level
+// プレイヤーレベルに応じて出現可能な敵タイプ一覧を取得する
 function getAvailableEnemyTypes(playerLevel) {
     const available = enemyTypes.filter(type => {
         const max = type.maxLevel === undefined ? Infinity : type.maxLevel;
         return playerLevel >= type.minLevel && playerLevel <= max;
     });
 
-    // Safety net: never return an empty pool (e.g. if ranges were misconfigured).
+    // 安全策: 出現範囲の設定ミスなどで空にならないようにする
     return available.length > 0 ? available : [enemyTypes[0]];
 }

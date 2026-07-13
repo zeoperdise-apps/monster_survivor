@@ -1,5 +1,5 @@
-// Accessory definitions. All bonus values are percentage points on top of a
-// 100% baseline (e.g. value 10 means "+10%", applied additively across levels).
+// アクセサリの定義。ボーナス値は100%を基準としたパーセントポイントで
+// （例: value 10は「+10%」を意味し、レベルを重ねるごとに加算される）。
 const accessoryTypes = [
     {
         name: "力の腕輪",
@@ -45,16 +45,18 @@ const accessoryTypes = [
     }
 ];
 
+// 名前からアクセサリの定義データを取得する
 function getAccessoryByName(name) {
     return accessoryTypes.find(a => a.name === name);
 }
 
+// プレイヤーが既にそのアクセサリを所持しているか確認する
 function hasAccessory(player, name) {
     return player.accessories.some(a => a.name === name);
 }
 
-// Grants one level of the named accessory (adding it if the player doesn't
-// have it yet) and applies that level's bonus to the player's running totals.
+// 指定したアクセサリを1レベル分付与し（未所持なら新規追加）、
+// そのレベル分のボーナスをプレイヤーの累計値に加算する
 function grantAccessory(player, name) {
     const type = getAccessoryByName(name);
     if (!type) return false;
@@ -75,13 +77,13 @@ function grantAccessory(player, name) {
     return true;
 }
 
-// Used by selectAccessory() in main.js when the player picks an accessory
-// from the level-up modal.
+// main.jsのselectAccessory()から、プレイヤーがレベルアップ選択画面で
+// アクセサリを選んだ際に呼び出される
 function addAccessoryToPlayer(player, name) {
     return grantAccessory(player, name);
 }
 
-// Accessories are only obtained via level-up choices, so the player starts with none.
+// アクセサリはレベルアップの選択肢からのみ入手できるため、開始時は何も持たない
 function initPlayerAccessories(player) {
     player.accessories = [];
 }
