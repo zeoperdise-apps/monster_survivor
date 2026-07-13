@@ -39,7 +39,7 @@ const accessoryTypes = [
     {
         name: "引き寄せのオーブ",
         description: "アイテムの収集範囲が上昇",
-        effects: [{ type: "bonusPickupRange", value: 30 }],
+        effects: [{ type: "bonusPickupRange", value: 50 }],
         img: "img/orb_of_attraction.png",
         maxLevel: 5
     }
