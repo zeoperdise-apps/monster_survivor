@@ -1088,11 +1088,13 @@ function levelUp() {
         availableWeapons.splice(randomIndex, 1);
     }
 
-    // 2種類揃わない場合は、既存の武器で埋める
+    // 2種類揃わない場合は、既存の武器で埋める（武器数上限に達している場合は
+    // 装備できない新規武器を混ぜないよう、既に所持している武器のみに絞る）
     if (weaponOptions.length < 2) {
         const allWeapons = getAvailableWeapons(player.level).filter(w => !isWeaponMaxed(w));
+        const candidatePool = atMaxWeapons ? allWeapons.filter(w => hasWeapon(player, w.name)) : allWeapons;
         for (let i = 0; i < 2 - weaponOptions.length; i++) {
-            const randomWeapon = allWeapons[Math.floor(Math.random() * allWeapons.length)];
+            const randomWeapon = candidatePool[Math.floor(Math.random() * candidatePool.length)];
             // randomWeaponのnameにアクセスする前に有効な値か確認する
             if (randomWeapon && !weaponOptions.some(w => w.name === randomWeapon.name)) {
                 weaponOptions.push(randomWeapon);
@@ -1170,6 +1172,12 @@ function levelUp() {
 
     // 自動レベルアップ: モーダルを完全にスキップし、ランダムな選択肢を即座に適用する。
     if (autoLevelUp) {
+        // 武器・アクセサリーとも上限＆全レベルMAXなら提示できる選択肢がない
+        if (upgradeOptions.length === 0) {
+            showToast('レベルアップ！（強化できるものがありません）');
+            return;
+        }
+
         const chosen = upgradeOptions[Math.floor(Math.random() * upgradeOptions.length)];
         if (chosen.type === 'weapon') {
             addWeaponToPlayer(player, chosen.data.name);
