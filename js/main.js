@@ -1103,7 +1103,7 @@ function showToast(message) {
 }
 
 // Persistent scrolling battle log shown at the bottom of the screen.
-const BATTLE_LOG_MAX_LINES = 8;
+const BATTLE_LOG_MAX_LINES = 500; // generous cap so the whole session stays scrollable without unbounded growth
 const battleLog = [];
 
 function addBattleLog(message) {
@@ -1114,7 +1114,12 @@ function addBattleLog(message) {
 
     const logElement = document.getElementById('battle-log');
     if (logElement) {
+        const wasScrolledToBottom = logElement.scrollHeight - logElement.scrollTop <= logElement.clientHeight + 4;
         logElement.innerHTML = battleLog.map(line => `<div>${line}</div>`).join('');
+        // Only auto-scroll to the newest entry if the player hasn't scrolled up to read history.
+        if (wasScrolledToBottom) {
+            logElement.scrollTop = logElement.scrollHeight;
+        }
     }
 }
 
